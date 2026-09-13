@@ -15,6 +15,10 @@ import software.bernie.geckolib.renderer.GeoObjectRenderer;
 import software.bernie.geckolib.util.RenderUtils;
 import top.csituka.magicaland.client.animation.ClientGaze;
 import top.csituka.magicaland.client.animation.PonyFlightVisuals;
+import top.csituka.magicaland.client.animation.PonyEmotePose;
+import top.csituka.magicaland.client.animation.PonyWingFlightAnimations;
+import top.csituka.magicaland.api.client.FlightPose;
+import top.csituka.magicaland.client.emote.EmoteClient;
 import top.csituka.magicaland.client.config.Config;
 import top.csituka.magicaland.client.config.ModelConfig;
 import top.csituka.magicaland.client.config.ModelManager;
@@ -37,6 +41,7 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
     private Matrix4f gazeFrame;
     private float gazePartialTick;
     private PonyFlightVisuals.Frame flightFrame = PonyFlightVisuals.Frame.NONE;
+    private FlightPose wingFlightPose;
     private final PonyGazeMath.Smoother gazeSmoother = new PonyGazeMath.Smoother();
     private final PonyTurnGaze turnGaze = new PonyTurnGaze();
     private final PonyGuiGaze.Tracker guiGaze = new PonyGuiGaze.Tracker();
@@ -82,6 +87,9 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
         } else heldWeights.reset();
         boolean previousSoundPass = animatable.worldSoundPass();
         animatable.setWorldSoundPass(worldFlightRender());
+        if (wingFlightPose != null && worldFlightRender())
+            PonyWingFlightAnimations.resolve(getGeoModel().getAnimation(animatable, "fly"),
+                    getGeoModel().getAnimation(animatable, "fall"), getGeoModel().getAnimation(animatable, "fall_transfer"));
         BodyFlightAura.Capture previousBody = bodyAuraCapture;
         AuraCapture capture = new AuraCapture();
         auraCapture = capture;
@@ -111,7 +119,8 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
                 || !player.isAlive() || player.isInvisible() || player.isSpectator()) return null;
         var camera = net.minecraft.client.MinecraftClient.getInstance().gameRenderer.getCamera();
         if (player.squaredDistanceTo(camera.getPos()) > 48 * 48) return null;
-        return BodyFlightAura.begin(flightFrame.magic(), GlowingItem.getGlowColor(config), player.age + (double) partialTick);
+        float strength = flightFrame.magic() * PonyFlightVisuals.auraBrightness(player, partialTick);
+        return BodyFlightAura.begin(strength, GlowingItem.getGlowColor(config), player.age + (double) partialTick);
     }
 
     private boolean worldFlightRender() {
@@ -125,6 +134,12 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
 
     public void setFlightFrame(PonyFlightVisuals.Frame frame) {
         flightFrame = frame == null ? PonyFlightVisuals.Frame.NONE : frame;
+    }
+
+    public void setWingFlightPose(FlightPose pose) { wingFlightPose = pose; }
+
+    public static FlightPose wingFlightPoseFor(net.minecraft.client.network.AbstractClientPlayerEntity player) {
+        return HornAuraPass.isWorld() && PonyGuiGaze.current() == null ? PonyFlightVisuals.wingPose(player) : null;
     }
 
     public PonyRenderer() {
@@ -186,15 +201,22 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
             float red, float green, float blue, float alpha) {
 
         if (ManeDye.retiredOverlay(bone.getName())) return;
+        if (gazeFrame != null && PonyArmorRenderer.hidesBone(animatable.getPlayer(), bone.getName())) return;
         ModelConfig config = getEffectiveConfig();
         if (!PonyFacePose.shouldRender(bone.getName(), config == null ? "01" : config.eyeStyle))
             return;
 
         boolean previousMirror = mirroredMane;
+        boolean emote = animatable.isPlayingEmote();
         try (var mirror = ManeMirror.begin(poseStack, config, bone.getName());
-                PonyFlightPose flight = PonyFlightPose.apply(bone, flightFrame, worldFlightRender(), isReRender);
+                PonyFlightPose flight = PonyFlightPose.apply(bone, flightFrame, worldFlightRender() && !emote, isReRender);
+                PonyWingFlightPose wing = PonyWingFlightPose.apply(bone,
+                        worldFlightRender() && !emote && !isReRender ? wingFlightPose : null,
+                        animatable.getPlayer() == null ? 0 : animatable.getPlayer().age + (double) partialTick);
+                PonyEmotePose emotePose = PonyEmotePose.apply(bone, emote ? EmoteClient.action(animatable.getPlayer()) : "");
                 HeadPose head = applyHeadLook(bone, animatable);
-                PonyHeldItemPose holding = PonyHeldItemPose.apply(bone, heldItems, heldWeights, isReRender);
+                PonyHeldItemPose holding = emote ? null
+                        : PonyHeldItemPose.apply(bone, heldItems, heldWeights, isReRender);
                 PonyFacePose face = "Emotions".equals(bone.getName())
                 ? PonyFacePose.apply(bone) : null) {
             if (mirror != null) mirroredMane = !previousMirror;
@@ -241,6 +263,19 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
                     } finally { poseStack.pop(); }
                 }
                 if (!isReRender) PonyHeldItems.renderAtBone(poseStack, bone, bufferSource, heldItems, packedLight, packedOverlay);
+                if (!isReRender && gazeFrame != null && bodyVisibility == PonyVisibility.VISIBLE)
+                    PonyArmorRenderer.renderAtBone(this, poseStack, bone, bufferSource, animatable.getPlayer(),
+                            packedLight, packedOverlay, bodyAuraCapture);
+                if (!isReRender && bodyAuraCapture != null && "Body".equals(bone.getName()) && !bone.isHidden()) {
+                    var player = animatable.getPlayer();
+                    MatrixStack auraPose = new MatrixStack();
+                    auraPose.peek().getPositionMatrix().set(poseStack.peek().getPositionMatrix());
+                    auraPose.peek().getNormalMatrix().set(poseStack.peek().getNormalMatrix());
+                    RenderUtils.prepMatrixForBone(auraPose, bone);
+                    float strength = flightFrame.magic() * PonyFlightVisuals.auraBrightness(player, partialTick);
+                    auraCapture.draws.add(BodyMagicStars.capture(auraPose, bone, GlowingItem.getGlowColor(config),
+                            player.age + (double) partialTick, player.getUuid().hashCode(), strength));
+                }
             } finally {
                 usingPalette = previousPalette;
                 eyeBuffers = previousBuffers;
@@ -260,7 +295,7 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
 
     private HeadPose applyHeadLook(GeoBone bone, GeckoPlayerAnimatable animatable) {
         // 仅世界渲染注入设置此frame，主预览和静态缩略图都不跟随玩家视角。
-        if (gazeFrame == null || headLookActive) return null;
+        if (gazeFrame == null || headLookActive || animatable.isPlayingEmote()) return null;
         boolean neck = "Neck".equals(bone.getName());
         if (!neck && !"Head".equals(bone.getName())) return null;
         var player = animatable.getPlayer();
@@ -276,6 +311,11 @@ public class PonyRenderer extends GeoObjectRenderer<GeckoPlayerAnimatable> {
         if (PonyBodyYaw.hasLivingMount(player)) previousBodyYaw = bodyYaw = PonyBodyYaw.sample(player, gazePartialTick);
         var rotation = PonyHeadLookMath.sample(previousBodyYaw, bodyYaw, player.prevHeadYaw, player.headYaw,
                 player.prevPitch, player.getPitch(), gazePartialTick, pose);
+        if (wingFlightPose != null && worldFlightRender()) {
+            var look = player.getRotationVec(gazePartialTick);
+            rotation = PonyHeadLookMath.flight(PonyWingFlightMath.rotation(wingFlightPose),
+                    (float) look.x, (float) look.y, (float) look.z, 1 - PonyWingFlightMath.curl(wingFlightPose));
+        }
         if (neck) {
             GeoBone head = bone.getChildBones().stream().filter(child -> "Head".equals(child.getName())).findFirst().orElse(null);
             if (head == null) return null;

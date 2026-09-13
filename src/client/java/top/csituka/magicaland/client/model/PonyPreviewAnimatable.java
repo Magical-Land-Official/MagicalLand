@@ -24,6 +24,7 @@ public final class PonyPreviewAnimatable extends GeckoPlayerAnimatable {
     @Override public double getTick(Object object) { return clock.ticks(); }
     @Override public boolean shouldPlayAnimsWhileGamePaused() { return true; }
     @Override public boolean allowsAutomaticGaze() { return PonyExpressions.allowsAutomaticGaze("idle"); }
+    @Override public boolean isPlayingEmote() { return false; }
     @Override public void syncLocalAnimationState(AbstractClientPlayerEntity player) {}
 
     public void prepareAnimationFrame(long instanceId, AnimationState<GeckoPlayerAnimatable> state) {

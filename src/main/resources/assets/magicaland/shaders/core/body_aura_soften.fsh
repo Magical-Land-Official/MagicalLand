@@ -47,7 +47,7 @@ void main() {
     if (center.a > 0.001) nearest = min(nearest, centerDepth);
     float wave = bodyWisps(texCoord * vec2(2.0, 2.5), FlowTime);
     float coverage = centerDepth < 1.0 && center.a > 0.001 ? 1.0 : 0.0;
-    float opacity = (0.045 * center.a + 0.40 * halo * (1.0 - coverage)) * wave;
+    float opacity = (0.14 * center.a + 0.90 * halo * (1.0 - coverage)) * wave;
     if (opacity < 0.003 || nearest >= 1.0) discard;
     vec3 tint = center.a > 0.5 ? center.rgb : haloColor;
     fragColor = vec4(tint, opacity);

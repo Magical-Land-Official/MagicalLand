@@ -17,8 +17,13 @@ import top.csituka.magicaland.client.animation.PonyIdleEarAnimations;
 import top.csituka.magicaland.client.animation.PonyFlightAnimations;
 import top.csituka.magicaland.client.animation.PonyFlightVisuals;
 import top.csituka.magicaland.client.animation.PonyJumpAnimation;
+import top.csituka.magicaland.client.animation.PonyLandingAnimation;
 import top.csituka.magicaland.client.animation.PonySneakController;
+import top.csituka.magicaland.client.animation.PonyTimedAnimationController;
+import top.csituka.magicaland.client.animation.PonyEmoteAnimations;
 import top.csituka.magicaland.client.network.ClientNetworkHandler;
+import top.csituka.magicaland.client.emote.EmoteClient;
+import top.csituka.magicaland.emote.EmoteDefinitions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +34,8 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
     private AbstractClientPlayerEntity player;
     private String mainAnimationName;
     private String expressionAction;
+    private String bodyEmote = "";
+    private long bodyEmoteGeneration = Long.MIN_VALUE;
     private boolean worldSoundPass;
     private final PonyBackwardLook backwardLook = new PonyBackwardLook();
     private final PonyIdleEars idleEars = new PonyIdleEars();
@@ -53,6 +60,11 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
     private static final RawAnimation RIDE_ANIM = RawAnimation.begin().thenLoop("ride");
     private static final RawAnimation RIDE_PIG_ANIM = RawAnimation.begin().thenLoop("ride_pig");
     private static final RawAnimation SIT_ANIM = RawAnimation.begin().thenLoop("sit");
+    private static final RawAnimation WAVE_ANIM = RawAnimation.begin().thenPlay("wave_hand");
+    private static final RawAnimation BALLET_ANIM = RawAnimation.begin().thenLoop("Ballet");
+    private static final RawAnimation WAVE_FACE = RawAnimation.begin().thenPlayAndHold("face.wave");
+    private static final RawAnimation BALLET_FACE = RawAnimation.begin().thenLoop("face.ballet");
+    private static final RawAnimation EMOTE_OPEN_EYES = RawAnimation.begin().thenLoop(PonyEmoteAnimations.OPEN_EYES);
 
     private static final RawAnimation FALL_TRANSFER_ANIM = RawAnimation.begin().thenPlay("fall_transfer")
             .thenLoop("fall");
@@ -62,13 +74,9 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
     private record AnimationSelection(String name, RawAnimation animation) {}
 
     private static class PlayerFallState {
-        float maxFallDistance = 0;
         int fallStartTime = -1;
-        int landStartTime = -1;
         final PonyJumpAnimation jump = new PonyJumpAnimation();
-        boolean landed = false;
-        boolean isLarge = false;
-        boolean wasOnGround = true;
+        final PonyLandingAnimation landing = new PonyLandingAnimation();
     }
 
     private final Map<UUID, PlayerFallState> fallStates = new HashMap<>();
@@ -82,6 +90,8 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
                 fallStates.remove(this.player.getUuid());
             mainAnimationName = null;
             expressionAction = null;
+            bodyEmote = "";
+            bodyEmoteGeneration = Long.MIN_VALUE;
             backwardLook.reset();
             idleEars.reset();
             earEventWindow = Long.MIN_VALUE;
@@ -98,6 +108,7 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
 
     public String hoofAnimation() {
         if (player == null) return "";
+        if (isPlayingEmote()) return EmoteDefinitions.animation(EmoteClient.action(player));
         if (!isLocalPlayer() && ClientNetworkHandler.hasRemoteAnimation(player.getUuid(), "controller")) {
             String action = ClientNetworkHandler.getRemoteAnimation(player.getUuid(), "controller");
             return action == null ? "" : action;
@@ -107,8 +118,16 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
     }
 
     public boolean allowsAutomaticGaze() {
-        return player != null && PonyExpressions.allowsAutomaticGaze(effectiveExpressionAction());
+        if (player == null || isPlayingEmote()) return false;
+        String expression = EmoteClient.expression(player);
+        if (!"auto".equals(expression)) {
+            var definition = PonyExpressions.expressions().get(expression);
+            return definition != null && definition.automaticGaze();
+        }
+        return PonyExpressions.allowsAutomaticGaze(effectiveExpressionAction());
     }
+
+    public boolean isPlayingEmote() { return !EmoteClient.action(player).isEmpty(); }
 
     public PonyBackwardLook.Frame backwardLook(float partialTick) {
         return backwardLook.sample(player == null ? 0 : player.age + Math.max(0, Math.min(1, partialTick)));
@@ -131,13 +150,13 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
                 top.csituka.magicaland.client.sound.PonyHoofSounds.observeAnimation(player, action, phase, player.age + (double) partialTick);
         }));
         controllers.add(new AnimationController<>(this, "blink_controller", 3, this::blinkPredicate));
-        controllers.add(new AnimationController<>(this, "expression_controller", 3, this::expressionPredicate));
+        controllers.add(new PonyTimedAnimationController<>(this, "expression_controller", 3, this::expressionPredicate));
         controllers.add(new AnimationController<>(this, "ear_controller", 1, this::earPredicate));
         controllers.add(new AnimationController<>(this, "tail_controller", 3, this::tailPredicate));
     }
 
     private boolean isIdle() {
-        if (player == null)
+        if (player == null || isPlayingEmote())
             return false;
 
         if (player.hurtTime > 0)
@@ -160,7 +179,7 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
         if (!isOnGround && !player.isTouchingWater() && !player.getAbilities().flying
                 && (player.fallDistance > 0.1f || fallState.jump.isJumping(player.age, player.getVelocity().y)))
             return false;
-        if (fallState.landed)
+        if (fallState.landing.isLanding())
             return false;
         if (player.isSneaking())
             return false;
@@ -177,6 +196,8 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
     private PlayState blinkPredicate(AnimationState<GeckoPlayerAnimatable> state) {
         if (player == null)
             return stopAnimation(state);
+        // 停止眨眼会让 shut 恢复模型默认缩放，必须显式保持睁眼底层。
+        if (isPlayingEmote()) return playAnimation(state, new AnimationSelection(PonyEmoteAnimations.OPEN_EYES, EMOTE_OPEN_EYES));
 
         PlayState remoteState = applyRemoteAnimation(state);
         if (remoteState != null)
@@ -185,12 +206,18 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
     }
 
     private PlayState expressionPredicate(AnimationState<GeckoPlayerAnimatable> state) {
+        String emote = EmoteClient.action(player);
+        String manual = EmoteClient.expression(player);
         String action = effectiveExpressionAction();
-        if (!action.equals(expressionAction)) {
+        String key = !emote.isEmpty() ? "emote:" + emote + ":" + EmoteClient.generation(player)
+                : !"auto".equals(manual) ? "manual:" + manual : action;
+        if (!key.equals(expressionAction)) {
             state.getController().forceAnimationReset();
-            expressionAction = action;
+            expressionAction = key;
         }
-        state.getController().setAnimation(PonyExpressions.forAction(action));
+        state.getController().setAnimation(!emote.isEmpty() ? "wave".equals(emote) ? WAVE_FACE : BALLET_FACE
+                : !"auto".equals(manual) ? PonyExpressions.forExpression(manual) : PonyExpressions.forAction(action));
+        if (!emote.isEmpty()) seekEmote(state);
         return PlayState.CONTINUE;
     }
 
@@ -220,7 +247,7 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
     }
 
     private PlayState tailPredicate(AnimationState<GeckoPlayerAnimatable> state) {
-        if (player == null)
+        if (player == null || isPlayingEmote())
             return stopAnimation(state);
 
         PlayState remoteState = applyRemoteAnimation(state);
@@ -236,12 +263,36 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
         if (player == null)
             return stopAnimation(state);
 
-        PlayState remoteState = applyRemoteAnimation(state);
+        AnimationSelection selection = resolveMainAnimation();
+        String emote = EmoteClient.action(player);
+        long generation = EmoteClient.generation(player);
+        if (!emote.equals(bodyEmote) || !emote.isEmpty() && generation != bodyEmoteGeneration) {
+            if ("wave".equals(bodyEmote) && !"wave".equals(emote) && state.getController() instanceof PonySneakController<?> controller)
+                controller.normalizeWaveRotationsForTransition();
+            if ("ballet".equals(bodyEmote) && state.getController() instanceof PonySneakController<?> controller)
+                controller.normalizeRootYawForTransition();
+            state.getController().forceAnimationReset();
+            bodyEmote = emote;
+            bodyEmoteGeneration = generation;
+        }
+        if (!emote.isEmpty()) {
+            setMainAnimation(EmoteDefinitions.animation(emote));
+            applyAnimation(state, "wave".equals(emote) ? WAVE_ANIM : BALLET_ANIM);
+            seekEmote(state);
+            return PlayState.CONTINUE;
+        }
+
+        PlayState remoteState = PonyFlightVisuals.wingPose(player) == null ? applyRemoteAnimation(state) : null;
         if (remoteState != null)
             return remoteState;
 
-        AnimationSelection selection = resolveMainAnimation();
         return selection == null ? stopAnimation(state) : playAnimation(state, selection);
+    }
+
+    private void seekEmote(AnimationState<GeckoPlayerAnimatable> state) {
+        double elapsed = EmoteClient.elapsedTicks(player, state.getPartialTick());
+        if (elapsed >= 3 && state.getController() instanceof PonyTimedAnimationController<?> controller)
+            controller.seekAnimation(PonyEmoteAnimations.phaseTicks(EmoteClient.action(player), elapsed));
     }
 
     public void syncLocalAnimationState(AbstractClientPlayerEntity localPlayer) {
@@ -251,7 +302,7 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
 
         AnimationSelection main = resolveMainAnimation();
         ClientNetworkHandler.sendAnimation("controller", main == null ? "" : main.name());
-        ClientNetworkHandler.sendAnimation("blink_controller", "blink_parallel");
+        ClientNetworkHandler.sendAnimation("blink_controller", isPlayingEmote() ? "" : "blink_parallel");
 
         boolean idle = isIdle();
         boolean earAllowed = PonyIdleEars.allowed(main == null ? null : main.name(),
@@ -264,7 +315,7 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
         if (player == null)
             return null;
 
-        if (player.hurtTime > 0)
+        if (player.hurtTime > 0 && PonyFlightVisuals.wingPose(player) == null)
             return new AnimationSelection("attacked", ATTACKED_ANIM);
 
         if (player.isSleeping())
@@ -290,10 +341,11 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
         boolean moving = player.forwardSpeed != 0 || player.sidewaysSpeed != 0;
 
         boolean flying = player.getAbilities().flying || PonyFlightVisuals.flying(player);
+        var landing = fallState.landing.update(player.age, player.fallDistance, isOnGround,
+                flying, player.isTouchingWater(), moving || player.isSneaking());
         fallState.jump.update(player.age, player.getVelocity().y,
                 !isOnGround && !flying && !player.isTouchingWater());
         if (!isOnGround && !flying && !player.isTouchingWater()) {
-            fallState.maxFallDistance = Math.max(fallState.maxFallDistance, player.fallDistance);
             if (player.fallDistance > 0.1f && fallState.fallStartTime == -1) {
                 fallState.fallStartTime = player.age;
             }
@@ -301,26 +353,14 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
             fallState.fallStartTime = -1;
         }
 
-        if (isOnGround && !fallState.wasOnGround) {
-            if (fallState.maxFallDistance > 0.5f) {
-                fallState.landed = true;
-                fallState.isLarge = fallState.maxFallDistance >= 3.0f;
-                fallState.landStartTime = player.age;
-            }
-            fallState.maxFallDistance = 0;
-        }
-
-        fallState.wasOnGround = isOnGround;
-
-        if (moving || player.isSneaking() || flying || player.isTouchingWater()) {
-            fallState.landed = false;
-        }
-        if (flying) fallState.maxFallDistance = 0;
-
         var flightConfig = PonyFlightVisuals.config(player);
         boolean authoredFlight = player.getAbilities().flying && (flightConfig == null || flightConfig.showWings);
         if (authoredFlight || PonyFlightVisuals.flying(player)) {
-            String action = player.isSprinting() ? "elytra_fly" : "fly";
+            var pose = PonyFlightVisuals.wingPose(player);
+            boolean glide = pose == null ? player.isSprinting()
+                    : pose.mode() == top.csituka.magicaland.api.client.FlightPose.Mode.GLIDE
+                    || pose.mode() == top.csituka.magicaland.api.client.FlightPose.Mode.BOOST;
+            String action = glide ? "elytra_fly" : "fly";
             return new AnimationSelection(action, flightAnimation(action));
         }
 
@@ -339,15 +379,10 @@ public class GeckoPlayerAnimatable implements GeoAnimatable {
             }
         }
 
-        if (fallState.landed) {
-            int landDuration = fallState.isLarge ? 20 : 10;
-            if (player.age - fallState.landStartTime < landDuration) {
-                return fallState.isLarge
-                        ? new AnimationSelection("larger_land", LARGER_LAND_ONLY_ANIM)
-                        : new AnimationSelection("land", LAND_ONLY_ANIM);
-            }
-            fallState.landed = false;
-        }
+        if (landing != PonyLandingAnimation.Landing.NONE)
+            return landing == PonyLandingAnimation.Landing.HEAVY
+                    ? new AnimationSelection("larger_land", LARGER_LAND_ONLY_ANIM)
+                    : new AnimationSelection("land", LAND_ONLY_ANIM);
 
         if (player.isSneaking()) {
             return moving

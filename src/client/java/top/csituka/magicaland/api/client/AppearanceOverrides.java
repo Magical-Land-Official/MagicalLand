@@ -39,6 +39,11 @@ public final class AppearanceOverrides {
         return AppearanceOverrideState.registerFlightActivity(ownerId, priority, provider);
     }
 
+    /** Full world orientation and wing motion; null yields to lower priorities. Since API 1.6. */
+    public static Registration registerFlightPose(String ownerId, int priority, Function<UUID, FlightPose> provider) {
+        return AppearanceOverrideState.registerFlightPose(ownerId, priority, provider);
+    }
+
     /** Removes this owner's registrations in all channels; other owners are preserved. */
     public static void unregisterOwner(String ownerId) {
         AppearanceOverrideState.unregisterOwner(ownerId);
@@ -61,4 +66,6 @@ public final class AppearanceOverrides {
     public static boolean flightActive(UUID player) {
         return AppearanceOverrideState.flightActive(player);
     }
+
+    public static FlightPose flightPose(UUID player) { return AppearanceOverrideState.flightPose(player); }
 }

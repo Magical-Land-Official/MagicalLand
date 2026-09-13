@@ -14,6 +14,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import top.csituka.magicaland.gaze.ServerGaze;
 import top.csituka.magicaland.cutiemark.CutieMarkData;
+import top.csituka.magicaland.emote.ServerEmotes;
 
 import java.util.Map;
 import java.util.Set;
@@ -48,10 +49,12 @@ public class NetworkHandler {
 
     public static void registerServer() {
         ServerGaze.register();
+        ServerEmotes.register();
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (UUID uuid : modelUpdates.pendingPlayers()) applyPendingModel(server, uuid);
             for (UUID uuid : animationUpdates.pendingPlayers()) applyPendingAnimation(server, uuid);
+            ServerEmotes.tick(server);
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             modelUpdates.clear();
@@ -59,6 +62,7 @@ public class NetworkHandler {
             animationUpdates.clear();
             playerModels.clear();
             playerAnimations.clear();
+            ServerEmotes.clear();
         });
 
         ServerPlayNetworking.registerGlobalReceiver(CHANNEL,
@@ -80,6 +84,7 @@ public class NetworkHandler {
                     top.csituka.magicaland.sound.HoofStepProtocol.VERSION);
             send(handler.getPlayer(), GSON.toJson(handshake));
             sendAppearanceSnapshot(handler.getPlayer());
+            ServerEmotes.sendSnapshot(handler.getPlayer());
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
@@ -89,6 +94,7 @@ public class NetworkHandler {
             modelUpdates.remove(uuid);
             animationUpdates.remove(uuid);
             lastTransformations.remove(uuid);
+            ServerEmotes.remove(uuid);
 
             JsonObject remove = new JsonObject();
             remove.addProperty("type", "player_remove");
@@ -135,6 +141,7 @@ public class NetworkHandler {
                 boolean removedAnimations = playerAnimations.remove(uuid) != null;
                 modelUpdates.remove(uuid);
                 animationUpdates.remove(uuid);
+                ServerEmotes.remove(uuid);
                 if (!removedModel && !removedAnimations) {
                     return;
                 }

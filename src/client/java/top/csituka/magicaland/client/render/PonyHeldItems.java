@@ -92,11 +92,19 @@ public final class PonyHeldItems {
             RenderUtils.prepMatrixForBone(matrices, bone);
             if (grip == Grip.MOUTH) {
                 matrices.translate(0, 22.05 / 16, -11.5 / 16);
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(left ? -15 : 15));
-                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(left ? 25 : -25));
-                matrices.scale(.68f, .68f, .68f);
-                // 普通工具的柄靠近图标左下角，把柄而非图标中心放到嘴边。
-                matrices.translate(.25, .25, 0);
+                if (stack.getItem() instanceof TridentItem) {
+                    matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(left ? -12 : 12));
+                    matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(left ? 90 : -90));
+                    matrices.scale(.68f, .68f, .68f);
+                    // NONE 使用三维三叉戟；抵消物品渲染偏移，让柄中段落在嘴边。
+                    matrices.translate(.5, 1.40625, .5);
+                } else {
+                    matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(left ? -15 : 15));
+                    matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(left ? 25 : -25));
+                    matrices.scale(.68f, .68f, .68f);
+                    // 普通工具的柄靠近图标左下角，把柄而非图标中心放到嘴边。
+                    matrices.translate(.25, .25, 0);
+                }
             } else if (grip == Grip.SHIELD) {
                 matrices.translate((bone.getPivotX() + (left ? -2.8 : 2.8)) / 16, 1.5 / 16, -3.5 / 16);
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(180));

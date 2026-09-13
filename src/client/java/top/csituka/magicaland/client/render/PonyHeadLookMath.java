@@ -12,6 +12,15 @@ final class PonyHeadLookMath {
         return worldRender && !nested && "Head".equals(boneName);
     }
 
+    static Rotation flight(org.joml.Quaternionf body, float x, float y, float z, float strength) {
+        var local = body.conjugate(new org.joml.Quaternionf()).transform(new org.joml.Vector3f(x, y, z));
+        if (!local.isFinite() || !Float.isFinite(strength)) return Rotation.ZERO;
+        float yaw = (float) Math.atan2(local.x, local.z);
+        float pitch = (float) Math.atan2(local.y, Math.hypot(local.x, local.z));
+        return new Rotation(clamp(pitch * .4f, (float) Math.toRadians(-25), (float) Math.toRadians(25)) * strength,
+                clamp(yaw * .5f, (float) Math.toRadians(-35), (float) Math.toRadians(35)) * strength);
+    }
+
     static Rotation sample(float previousBodyYaw, float bodyYaw, float previousHeadYaw, float headYaw,
             float previousPitch, float pitch, float partialTick, Pose pose) {
         if (pose == Pose.SLEEPING || !finite(previousBodyYaw, bodyYaw, previousHeadYaw, headYaw,

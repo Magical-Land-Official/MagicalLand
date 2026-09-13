@@ -11,12 +11,14 @@ import org.slf4j.LoggerFactory;
 import top.csituka.magicaland.api.client.AppearanceOverrides.Visibility;
 import top.csituka.magicaland.api.client.AnatomyOverride;
 import top.csituka.magicaland.api.client.Registration;
+import top.csituka.magicaland.api.client.FlightPose;
 
 public final class AppearanceOverrideState {
     private static final OverrideRegistry<Visibility> VISIBILITY = new OverrideRegistry<>(AppearanceOverrideState::failed);
     private static final OverrideRegistry<Entity> GAZE = new OverrideRegistry<>(AppearanceOverrideState::failed);
     private static final OverrideRegistry<Boolean> MAGIC = new OverrideRegistry<>(AppearanceOverrideState::failed);
     private static final OverrideRegistry<Boolean> FLIGHT = new OverrideRegistry<>(AppearanceOverrideState::failed);
+    private static final OverrideRegistry<FlightPose> FLIGHT_POSE = new OverrideRegistry<>(AppearanceOverrideState::failed);
     private static final OverrideRegistry<AnatomyOverride> ANATOMY = new OverrideRegistry<>(AppearanceOverrideState::failed);
     private static boolean initialized;
 
@@ -30,6 +32,7 @@ public final class AppearanceOverrideState {
             GAZE.clear();
             MAGIC.clear();
             FLIGHT.clear();
+            FLIGHT_POSE.clear();
             ANATOMY.clear();
         });
     }
@@ -60,11 +63,16 @@ public final class AppearanceOverrideState {
         return FLIGHT.register(ownerId, priority, provider::test);
     }
 
+    public static Registration registerFlightPose(String ownerId, int priority, Function<UUID, FlightPose> provider) {
+        return FLIGHT_POSE.register(ownerId, priority, provider);
+    }
+
     public static void unregisterOwner(String ownerId) {
         VISIBILITY.unregisterOwner(ownerId);
         GAZE.unregisterOwner(ownerId);
         MAGIC.unregisterOwner(ownerId);
         FLIGHT.unregisterOwner(ownerId);
+        FLIGHT_POSE.unregisterOwner(ownerId);
         ANATOMY.unregisterOwner(ownerId);
     }
 
@@ -82,8 +90,10 @@ public final class AppearanceOverrideState {
     }
 
     public static boolean flightActive(UUID player) {
-        return FLIGHT.resolve(player, Boolean.TRUE::equals, false);
+        return flightPose(player) != null || FLIGHT.resolve(player, Boolean.TRUE::equals, false);
     }
+
+    public static FlightPose flightPose(UUID player) { return FLIGHT_POSE.resolve(player, value -> true, null); }
 
     private static void failed(String ownerId, RuntimeException failure) {
         LoggerFactory.getLogger(AppearanceOverrideState.class).warn(

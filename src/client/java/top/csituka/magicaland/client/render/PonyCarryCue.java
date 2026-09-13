@@ -20,7 +20,7 @@ final class PonyCarryCue {
             if (!Objects.equals(left, nextLeft)) leftStart = tick;
             if (!Objects.equals(right, nextRight)) rightStart = tick;
             if (!Objects.equals(mouth, nextMouth)) {
-                boolean drawing = mouth == null && left == null && right == null && nextMouth != null;
+                boolean drawing = nextMouth != null;
                 boolean stowing = mouth != null && nextMouth == null && nextLeft == null && nextRight == null;
                 mouthStart = drawing || stowing ? tick : Double.NEGATIVE_INFINITY;
             } else if (nextMouth == null && (nextLeft != null || nextRight != null)) {

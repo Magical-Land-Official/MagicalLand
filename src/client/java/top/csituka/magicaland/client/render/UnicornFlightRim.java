@@ -39,7 +39,8 @@ public final class UnicornFlightRim {
         if (world != client.world || player != self) { reset(); world = client.world; player = self; }
         float partial = UnicornFlightRimMath.clamp(delta);
         double ticks = self.age + partial;
-        float magic = ENTRANCE.sample(ticks, PonyFlightVisuals.sample(self, model, partial).magic());
+        float magic = ENTRANCE.sample(ticks, PonyFlightVisuals.sample(self, model, partial).magic())
+                * PonyFlightVisuals.auraBrightness(self, partial);
         if (magic <= .001f) return;
         var vertices = context.getVertexConsumers().getBuffer(RenderLayer.getGuiOverlay());
         var matrix = context.getMatrices().peek().getPositionMatrix();

@@ -12,13 +12,18 @@ final class PonyHeldItemPose implements AutoCloseable {
         if (reRender || frame.player() == null) return null;
         String name = bone.getName();
         if (name.equals("Head")) {
+            var trident = weights.trident;
+            boolean throwing = trident.windup() > 0 || trident.release() > 0 || trident.settle() > 0;
             float progress = frame.mouthSwing();
-            boolean swinging = progress > 0 && progress < 1;
-            if (!swinging && weights.cue.headPitch() == 0) return null;
+            boolean swinging = !throwing && progress > 0 && progress < 1;
+            float cuePitch = throwing ? 0 : weights.cue.headPitch();
+            if (!throwing && !swinging && cuePitch == 0) return null;
             var saved = new PonyHeldItemPose(bone);
-            float pitch = weights.cue.headPitch() + (swinging ? (float) Math.sin(progress * Math.PI) * (float) Math.toRadians(3) : 0);
+            float pitch = cuePitch + trident.headPitchRadians()
+                    + (swinging ? (float) Math.sin(progress * Math.PI) * (float) Math.toRadians(3) : 0);
             float yaw = swinging ? (float) Math.sin(progress * Math.PI * 2) * (float) Math.toRadians(6) : 0;
-            bone.updateRotation(saved.rx + pitch, saved.ry + (frame.mainLeft() ? -yaw : yaw), saved.rz);
+            bone.updateRotation(saved.rx + pitch,
+                    saved.ry + (frame.mainLeft() ? -yaw : yaw) + trident.headYawRadians(), saved.rz);
             return saved;
         }
         if (!PonyFlightAnimations.isFrontLeg(name)) return null;
@@ -83,9 +88,11 @@ final class PonyHeldItemPose implements AutoCloseable {
         private float leftUse, rightUse;
         private final PonyCarryCue cues = new PonyCarryCue();
         private PonyCarryCue.Pose cue = PonyCarryCue.Pose.NONE;
+        private PonyTridentMotion.Pose trident = PonyTridentMotion.Pose.NONE;
         private double previous = Double.NaN;
         void update(double tick, PonyHeldItems.Frame frame) {
             update(tick, frame.raises(true), frame.raises(false), frame.consumingPitch(true), frame.consumingPitch(false));
+            trident = PonyTridentVisuals.sample(frame.player(), tick);
             Object main = frame.main().isEmpty() ? null : frame.main().getItem();
             Object off = frame.off().isEmpty() ? null : frame.off().getItem();
             cue = cues.sample(tick, frame.raises(true) ? (frame.mainLeft() ? main : off) : null,
@@ -110,6 +117,11 @@ final class PonyHeldItemPose implements AutoCloseable {
             previous = tick;
         }
         float usePitch(boolean leftArm) { return leftArm ? leftUse : rightUse; }
-        void reset() { previous = Double.NaN; left = right = leftUse = rightUse = 0; cues.reset(); cue = PonyCarryCue.Pose.NONE; }
+        void reset() {
+            previous = Double.NaN;
+            left = right = leftUse = rightUse = 0;
+            cues.reset(); cue = PonyCarryCue.Pose.NONE;
+            trident = PonyTridentMotion.Pose.NONE;
+        }
     }
 }

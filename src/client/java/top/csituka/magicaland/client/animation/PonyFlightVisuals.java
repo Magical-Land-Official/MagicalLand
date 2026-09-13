@@ -6,6 +6,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import top.csituka.magicaland.api.client.AppearanceOverrides;
+import top.csituka.magicaland.api.client.FlightPose;
 import top.csituka.magicaland.client.config.Config;
 import top.csituka.magicaland.client.config.ModelConfig;
 import top.csituka.magicaland.client.config.ModelManager;
@@ -26,7 +27,7 @@ public final class PonyFlightVisuals {
             this(amount, magic, bodyPitch, bodyRoll, legPitch, legRoll, bob, curlDelta, 0);
         }
     }
-    private record Entry(AbstractClientPlayerEntity player, PonyFlightMotion motion) {}
+    private record Entry(AbstractClientPlayerEntity player, PonyFlightMotion motion, PonyFlightGlow glow) {}
     private static final Map<UUID, Entry> states = new HashMap<>();
     private static ClientWorld world;
     private static boolean registered;
@@ -59,11 +60,18 @@ public final class PonyFlightVisuals {
 
     public static boolean flying(AbstractClientPlayerEntity player) {
         if (!eligible(player)) return false;
+        if (wingPose(player) != null) return true;
         if (!player.isOnGround() && AppearanceOverrides.flightActive(player.getUuid())) return true;
         if (player == MinecraftClient.getInstance().player) return player.getAbilities().flying && !player.isOnGround();
         if (ClientNetworkHandler.hasRemoteAnimation(player.getUuid(), "controller"))
             return isFlightAction(ClientNetworkHandler.getRemoteAnimation(player.getUuid(), "controller"));
         return player.getAbilities().flying && !player.isOnGround();
+    }
+
+    public static FlightPose wingPose(AbstractClientPlayerEntity player) {
+        if (!eligible(player)) return null;
+        var config = config(player);
+        return config != null && config.showWings ? AppearanceOverrides.flightPose(player.getUuid()) : null;
     }
 
     public static boolean sprinting(AbstractClientPlayerEntity player) {
@@ -89,12 +97,24 @@ public final class PonyFlightVisuals {
     private static Entry observe(AbstractClientPlayerEntity player, ModelConfig config) {
         Entry entry = states.get(player.getUuid());
         if (entry == null || entry.player != player) {
-            entry = new Entry(player, new PonyFlightMotion());
+            entry = new Entry(player, new PonyFlightMotion(), new PonyFlightGlow());
             states.put(player.getUuid(), entry);
         }
         entry.motion.observe(player.age, player.getX(), player.getY(), player.getZ(), player.bodyYaw,
                 flying(player), config.showHorn, sprinting(player));
+        entry.glow.observe(player.age, player.getX(), player.getY(), player.getZ(), flying(player));
         return entry;
+    }
+
+    public static float auraBrightness(AbstractClientPlayerEntity player, float partialTick) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        updateWorld(client.world);
+        if (world == null || player == null || player.getWorld() != world || !eligible(player)
+                || !Config.getInstance().replacePlayerModel) return PonyFlightGlow.HOVER;
+        ModelConfig config = config(player);
+        if (config == null || config.showWings || !config.showHorn) return PonyFlightGlow.HOVER;
+        double partial = Float.isFinite(partialTick) ? Math.max(0, Math.min(1, partialTick)) : 0;
+        return observe(player, config).glow.sample(player.age + partial);
     }
 
     private static void tick(MinecraftClient client) {

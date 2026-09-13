@@ -2,7 +2,7 @@
 
 [返回中文首页](../README_ZH.md) · [English README](../README.md)
 
-这里整理 Magical Land 外观包的使用说明、开发接口和历次检查记录。当前开发版本为外观 0.3.5、公共 API 1.5，可搭配 Gameplay 0.3.3。各轮检查与游戏验收范围见下方记录。
+这里整理 Magical Land 外观包的使用说明、开发接口和历次检查记录。当前开发版本为外观 0.3.6、公共 API 1.6，可搭配 Gameplay 0.3.4。各轮检查与游戏验收范围见下方记录。
 
 ## 玩家指南与功能说明
 
@@ -59,7 +59,7 @@
 ## 规划与历史归档
 
 - [独立外观同步服务备选](appearance-sync-future.md)：后续方案，当前没有实施该服务。
-- [v1 宣传片构思草案](v1-trailer-draft.md)：2026-09-09 的讨论记录，尚未定稿。
+- [v1 正式宣传片分镜与配乐](v1-trailer-draft.md)：伙伴沿途加入的 112 秒工作稿，包含 24 镜分镜、动作复用与减少手工 K 帧的制作安排。
 - [文档与证据归档方案](development/documentation.md)：文档分类、报告格式与附件维护规则。
 
 三族能力、成就系统的指南和设计资料统一从 [Gameplay 文档目录](https://github.com/Elysian-Herd-Studio/Magical-Land-Gameplay/blob/1.20.1-Fabric/docs/README.md)进入。外观仓库中的旧玩法文档仅保留跳转，方便已有链接继续使用。

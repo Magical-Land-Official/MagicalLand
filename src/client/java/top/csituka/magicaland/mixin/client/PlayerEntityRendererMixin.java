@@ -125,7 +125,15 @@ public abstract class PlayerEntityRendererMixin
 
         org.joml.Matrix4f gazeFrame = new org.joml.Matrix4f(matrixStack.peek().getPositionMatrix());
 
-        if (player.isSleeping()) {
+        var wingPose = ponyAnimatable.isPlayingEmote() ? null : PonyRenderer.wingFlightPoseFor(player);
+
+        if (wingPose != null) {
+            flightRolls.remove(player.getUuid());
+            matrixStack.translate(0, .8, 0);
+            matrixStack.multiply(top.csituka.magicaland.client.render.PonyWingFlightMath.rotation(wingPose));
+            matrixStack.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(180));
+            matrixStack.translate(0, -.8, 0);
+        } else if (player.isSleeping()) {
             net.minecraft.util.math.Direction direction = player.getSleepingDirection();
             if (direction != null) {
                 float sleepYaw = direction.asRotation();
@@ -186,6 +194,7 @@ public abstract class PlayerEntityRendererMixin
         ponyRenderer.setBodyVisibility(visibility);
         ponyRenderer.setGazeFrame(gazeFrame, g);
         ponyRenderer.setFlightFrame(PonyFlightVisuals.sample(player, configToUse, g));
+        ponyRenderer.setWingFlightPose(wingPose);
         try {
             RenderLayer renderLayer = ponyRenderer.getRenderType(ponyAnimatable,
                     ponyRenderer.getTextureLocation(ponyAnimatable), vertexConsumerProvider, g);
@@ -196,6 +205,7 @@ public abstract class PlayerEntityRendererMixin
             ponyRenderer.setBodyVisibility(PonyVisibility.VISIBLE);
             ponyRenderer.setGazeFrame(null, 0);
             ponyRenderer.setFlightFrame(PonyFlightVisuals.Frame.NONE);
+            ponyRenderer.setWingFlightPose(null);
         }
 
         if (visibility == PonyVisibility.VISIBLE)

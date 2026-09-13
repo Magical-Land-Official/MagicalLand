@@ -2,7 +2,7 @@ package top.csituka.magicaland.client.render;
 
 public final class UnicornFlightRimMath {
     public static final int SEGMENTS = 64, BANDS = 8;
-    public static final float WIDTH = .08f, MAX_ALPHA = .15f;
+    public static final float WIDTH = .08f, MAX_ALPHA = .32f;
     private UnicornFlightRimMath() {}
 
     @FunctionalInterface

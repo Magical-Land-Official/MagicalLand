@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "geometry": "magicaland:geo/armor/metal.geo.json",
+  "texture": "magicaland:textures/armor/templates/metal.png",
+  "texture_width": 64,
+  "texture_height": 64,
+  "shading": {
+    "shadow_level": 224,
+    "base_level": 245,
+    "highlight_level": 255
+  },
+  "default_channel": "body",
+  "parts": {
+    "helmet": {
+      "bones": ["helmet", "plume"]
+    },
+    "chest": {
+      "bones": ["chest", "neck"]
+    },
+    "legs": {
+      "bones": ["legs"]
+    },
+    "boots": {
+      "bones": ["lfront", "rfront", "lhind", "rhind"]
+    }
+  },
+  "regions": [
+    {
+      "part": "chest",
+      "channel": "accent",
+      "runs": [[8, 8, 9], [9, 6, 9], [10, 4, 8]]
+    }
+  ],
+  "fixed_regions": [
+    {
+      "bones": ["plume"],
+      "rect": [23, 0, 47, 39]
+    }
+  ]
+}

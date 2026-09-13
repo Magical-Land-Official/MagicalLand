@@ -1,6 +1,6 @@
-# 外观 API v1.5
+# 外观 API v1.6
 
-Magicaland Appearance 0.3.5 通过 `top.csituka.magicaland.api` 和 `top.csituka.magicaland.api.client` 提供公共接口。Gameplay 及其他扩展（Addon）依赖这些包；配置、渲染实现、动画状态和同步缓存均属于外观模组内部实现。
+Magicaland Appearance 0.3.6 通过 `top.csituka.magicaland.api` 和 `top.csituka.magicaland.api.client` 提供公共接口，当前配套 Gameplay 0.3.4。Gameplay 及其他扩展（Addon）依赖这些包；配置、渲染实现、动画状态和同步缓存均属于外观模组内部实现。
 
 `ApiVersion` 位于主源码集，只依赖 Java 标准库，可在独立服务端安全查询。`.api.client` 下的接口仅供客户端使用：查询、注册和 `playTransformation` 必须在客户端线程执行，绘制接口必须在渲染线程执行。本 API 不授予玩法能力，也不提供可作为服务端判定依据的权威外观数据。
 
@@ -8,18 +8,18 @@ Magicaland Appearance 0.3.5 通过 `top.csituka.magicaland.api` 和 `top.csituka
 
 API 版本与模组版本独立。`ApiVersion.requireCompatible(1, 0)` 要求已安装 API 的主版本为 1、次版本至少为 0，不满足时抛出明确异常；`isCompatible` 提供不抛异常的兼容性检查。API 次版本更新保持已有签名和语义，不兼容变更必须提升主版本。扩展的模组元数据也必须声明兼容的 Appearance 版本要求；运行时检查无法解决 API 本身未安装的问题。
 
-独立持物视觉上下文与第三人称悬浮入口需要 `ApiVersion.requireCompatible(1, 1)`；魔法活动注册需要 `ApiVersion.requireCompatible(1, 2)`；随实体运动的光焰入口需要 `ApiVersion.requireCompatible(1, 3)`；角翅覆盖与变身光尘需要 `ApiVersion.requireCompatible(1, 4)`；独立飞行表现需要 `ApiVersion.requireCompatible(1, 5)`。已有方法签名继续兼容。
+独立持物视觉上下文与第三人称悬浮入口需要 `ApiVersion.requireCompatible(1, 1)`；魔法活动注册需要 `ApiVersion.requireCompatible(1, 2)`；随实体运动的光焰入口需要 `ApiVersion.requireCompatible(1, 3)`；角翅覆盖与变身光尘需要 `ApiVersion.requireCompatible(1, 4)`；独立飞行表现需要 `ApiVersion.requireCompatible(1, 5)`；完整飞行姿态需要 `ApiVersion.requireCompatible(1, 6)`。已有方法签名继续兼容。
 
-发布坐标为 `top.csituka:magicaland-appearance:0.3.5`。编译时依赖带 `api` 分类标识（classifier）的产物，运行时依赖完整 Appearance 模组。扩展应与主模组使用相同的 Minecraft 1.20.1、Fabric 和映射版本。通过 Loom 引用重映射后的 API 产物，Loom 会将其中的 Minecraft 类型签名转换为扩展开发环境所用的命名空间。
+发布坐标为 `top.csituka:magicaland-appearance:0.3.6`。编译时依赖带 `api` 分类标识（classifier）的产物，运行时依赖完整 Appearance 模组。扩展应与主模组使用相同的 Minecraft 1.20.1、Fabric 和映射版本。通过 Loom 引用重映射后的 API 产物，Loom 会将其中的 Minecraft 类型签名转换为扩展开发环境所用的命名空间。
 
 ```groovy
-modCompileOnly "top.csituka:magicaland-appearance:0.3.5:api"
-modRuntimeOnly "top.csituka:magicaland-appearance:0.3.5"
+modCompileOnly "top.csituka:magicaland-appearance:0.3.6:api"
+modRuntimeOnly "top.csituka:magicaland-appearance:0.3.6"
 ```
 
 `api` JAR 仅用于编译。不要将它放入 `mods` 文件夹、通过 `include` 嵌套打包、合并打包（shade），或把其中的类复制进扩展。运行时由完整 Appearance JAR 提供唯一一份公共 API 及其实现。Appearance 现有的服务端同步功能也保留在这同一个完整 JAR 中。
 
-API 产物包含 `top/csituka/magicaland/api/**` 下的全部类文件，包括嵌套枚举类。v1.4 具体包含 `ApiVersion`、`Registration`、`AppearanceSnapshot`、`Appearances`、`AppearanceOverrides`、`AppearanceOverrides$Visibility`、`AppearanceVisuals`、`ItemVisualContext` 和 `AnatomyOverride`。它不包含 `client/api` 内部桥接实现、`ModelConfig`、渲染内部类、网络类、Mixin 或资源。公共方法签名只使用 Java、Minecraft 或 API 自身的类型。`api-sources` 分类产物包含相应的公共源码；完整源码产物供主模组开发使用。
+API 产物包含 `top/csituka/magicaland/api/**` 下的全部类文件，包括嵌套枚举类。v1.6 具体包含 `ApiVersion`、`Registration`、`AppearanceSnapshot`、`Appearances`、`AppearanceOverrides`、`AppearanceOverrides$Visibility`、`AppearanceVisuals`、`ItemVisualContext`、`AnatomyOverride`、`FlightPose` 和 `FlightPose$Mode`。它不包含 `client/api` 内部桥接实现、`ModelConfig`、渲染内部类、网络类、Mixin 或资源。公共方法签名只使用 Java、Minecraft、游戏自带的 JOML 或 API 自身的类型。`api-sources` 分类产物包含相应的公共源码；完整源码产物供主模组开发使用。
 
 ## 只读外观查询
 
@@ -68,7 +68,32 @@ Gameplay 在 JOIN 时注册远控实体注视与魔法活动两条回调，断�
 
 `AppearanceOverrides.registerFlightActivity(ownerId, priority, Predicate<UUID> provider)` 让扩展启用已有飞行姿态、包身魔法、飞行声音和第一人称边缘光罩。回调返回 true 表示该玩家正在使用扩展的飞行能力；false 交给下一条注册，不会关闭原版飞行。角色仍需满足外观和状态条件，身体光效只用于有角、无翼的悬浮姿态，屏幕光罩只在第一人称显示。
 
-`flightActive(UUID)` 只查询扩展请求。接口不修改速度、重力、碰撞、摔落伤害或原版飞行权限，也不会发出网络消息。扩展负责同步有效施法状态，在停止、换维度或断线后清理。独立飞行与角部施法是两个注册类别，需要点亮角时同时注册魔法活动。
+`flightActive(UUID)` 只查询扩展请求，包括下方非空的完整飞行姿态。接口不修改速度、重力、碰撞、摔落伤害或原版飞行权限，也不会发出网络消息。扩展负责同步有效施法状态，在停止、换维度或断线后清理。独立飞行与角部施法是两个注册类别，需要点亮角时同时注册魔法活动。
+
+### 完整飞行姿态（API 1.6）
+
+`AppearanceOverrides.registerFlightPose(ownerId, priority, Function<UUID, FlightPose> provider)` 接收扩展提供的世界朝向与拍翼状态。返回 null 时尝试下一条注册；`flightPose(UUID)` 返回最终姿态或 null。非空姿态同时令 `flightActive(UUID)` 为 true，无需为同一次飞行另注册活动回调。句柄、优先级、异常隔离、owner 清理和断线重注册沿用上述规则。
+
+`new FlightPose(x, y, z, w, mode, flapStrength, reboundProgress)` 保存不可变的四元数分量，构造时归一化；非有限数、近零四元数或 null 模式会被拒绝。`rotation()` 返回新的 JOML `Quaternionf`，修改它不会改变原姿态。拍翼强度截取到 0–2，0 表示展开滑翔；回弹进度截取到 0–1。
+
+朝向将局部 **+Z 前方、+Y 上方** 转到 Minecraft 世界坐标。水平 yaw 0 对应单位四元数；原版角度换算为 `Ry(-yaw) * Rx(pitch)`，角度使用弧度，正 pitch 向下；局部横滚可再右乘 `Rz(roll)`。提供完整世界姿态，不要预乘模型自身的 180° 校准，也不要重复叠加 bodyYaw。外观包用此姿态转动视觉根节点，并把头部注视转回身体局部坐标。
+
+模式包括 `NORMAL` 普通拍翼、`GLIDE` 滑翔、`BOOST` 滑翔加力、`BRAKE` 制动、`LANDING` 落地缓冲、`REBOUND` 团身回弹。制动与落地会加强拍翼；滑翔加力仍可通过强度控制拍翼。回弹由进度驱动团身、视觉翻转三圈和最后展翼，传入的四元数只含基础朝向，不应再包含这三圈。
+
+```java
+ApiVersion.requireCompatible(1, 6);
+Map<UUID, FlightPose> poses = new HashMap<>(); // 扩展自己的当前世界状态
+Registration flight = AppearanceOverrides.registerFlightPose("my_addon:flight", 100, poses::get);
+// 在客户端更新姿态；yaw/pitch/roll 已换成弧度。
+Quaternionf q = new Quaternionf().rotationY(-yaw).rotateX(pitch).rotateZ(roll);
+poses.put(playerId, new FlightPose(q.x, q.y, q.z, q.w, FlightPose.Mode.GLIDE, 0, 0));
+// 能力结束移除玩家；断线或功能停用时清空并释放句柄。
+poses.remove(playerId);
+poses.clear();
+flight.close();
+```
+
+完整根节点姿态与程序拍翼只叠加于世界中的有效有翼小马；背包、捏脸预览和缩略图不叠加这一层旋转。绘制后恢复骨骼及变更标记，不改模型、UV、原动画资源或保存的外观。此接口不控制第一人称相机；相机、输入、飞行物理和多人姿态同步由扩展负责。没有扩展注册时，外观包仍可独立运行并沿用原有飞行表现。
 
 ### 角与翅膀的临时显示覆盖
 

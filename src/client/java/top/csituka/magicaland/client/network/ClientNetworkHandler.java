@@ -275,6 +275,7 @@ public class ClientNetworkHandler {
                     if (uuid != null) {
                         remoteModels.remove(uuid);
                         remoteAnimations.remove(uuid);
+                        top.csituka.magicaland.client.emote.EmoteClient.remove(uuid);
                     }
                 }
                 default -> {

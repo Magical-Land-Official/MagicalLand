@@ -13,6 +13,8 @@ import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import top.csituka.magicaland.client.config.Config;
 import top.csituka.magicaland.client.gui.ConfigScreen;
+import top.csituka.magicaland.client.emote.EmoteClient;
+import top.csituka.magicaland.client.emote.EmoteWheelScreen;
 import top.csituka.magicaland.client.network.ClientNetworkHandler;
 import top.csituka.magicaland.client.render.BodyTintTextures;
 import top.csituka.magicaland.client.render.ManeTintTextures;
@@ -36,6 +38,7 @@ public class Client implements ClientModInitializer {
         Config.load();
         top.csituka.magicaland.client.api.AppearanceOverrideState.init();
         BodyTintTextures.init();
+        top.csituka.magicaland.client.render.PonyArmorRenderer.init();
         ManeTintTextures.init();
         MagicGlow.init();
         BodyFlightAura.init();
@@ -59,7 +62,10 @@ public class Client implements ClientModInitializer {
 
         // 注册客户端网络处理
         ClientNetworkHandler.register();
+        EmoteClient.register();
+        EmoteWheelScreen.register();
         PonyFlightVisuals.register();
+        top.csituka.magicaland.client.render.PonyTridentVisuals.register();
         top.csituka.magicaland.client.render.UnicornFlightRim.init();
 
         configKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
