@@ -49,6 +49,18 @@ public final class MglSkinClient {
 
     public static String username() { return Config.getInstance().mglSkinUsername; }
 
+    public static ModelConfig parseModel(RemoteSkin skin) {
+        if (skin == null || skin.data() == null || skin.data().length() > 1_000_000) return null;
+        try {
+            ModelConfig model = GSON.fromJson(skin.data(), ModelConfig.class);
+            if (model == null) return null;
+            model.name = skin.name();
+            return ModelConfig.sanitize(model);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
     public static void fetchSkins(Consumer<List<RemoteSkin>> success, Consumer<String> failure) {
         request("GET", "/api/skins", null, response -> {
             try {
@@ -62,13 +74,13 @@ public final class MglSkinClient {
                 }
                 onGameThread(() -> success.accept(result));
             } catch (RuntimeException error) {
-                onGameThread(() -> failure.accept("MGL Skin 返回了无效数据"));
+                onGameThread(() -> failure.accept("服务返回了无效数据"));
             }
         }, failure);
     }
 
     public static void upload(ModelConfig model, Consumer<String> success, Consumer<String> failure) {
-        if (!isLoggedIn()) { failure.accept("请先登录 MGL Skin"); return; }
+        if (!isLoggedIn()) { failure.accept("请先登录共享服务"); return; }
         JsonObject body = new JsonObject();
         body.addProperty("name", model.name);
         body.addProperty("data", GSON.toJson(model));
@@ -93,7 +105,7 @@ public final class MglSkinClient {
             String url = baseUrl() + "/minecraft?callback=" + encode(callback) + "&state=" + encode(state);
             Util.getOperatingSystem().open(URI.create(url));
         } catch (Exception error) {
-            failure.accept("无法打开 MGL Skin 登录页面");
+            failure.accept("无法打开登录页面");
         }
     }
 
@@ -158,16 +170,16 @@ public final class MglSkinClient {
             HTTP.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
                     .thenAccept(response -> {
                         if (response.body().length() > MAX_RESPONSE || response.statusCode() / 100 != 2) {
-                            onGameThread(() -> failure.accept("MGL Skin 请求失败（" + response.statusCode() + "）"));
+                            onGameThread(() -> failure.accept("服务请求失败（" + response.statusCode() + "）"));
                         } else success.accept(response.body());
             }).exceptionally(error -> {
                 Throwable cause = error.getCause() == null ? error : error.getCause();
                 LOGGER.warn("MGL Skin request failed: {}", cause.toString());
-                onGameThread(() -> failure.accept("无法连接 MGL Skin：" + cause.getClass().getSimpleName()));
+                onGameThread(() -> failure.accept("无法连接共享服务：" + cause.getClass().getSimpleName()));
                 return null;
             });
         } catch (RuntimeException error) {
-            onGameThread(() -> failure.accept("MGL Skin 地址无效"));
+            onGameThread(() -> failure.accept("服务地址无效"));
         }
     }
 

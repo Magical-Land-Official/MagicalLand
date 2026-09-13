@@ -3,18 +3,26 @@ package top.csituka.magicaland.client.gui;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
-import top.csituka.magicaland.client.config.ModelConfig;
 import top.csituka.magicaland.client.config.ModelManager;
+import top.csituka.magicaland.client.gui.ponycustom.CustomizationLayout.Rect;
+import top.csituka.magicaland.client.gui.ponymanager.ModelGridWidget;
 import top.csituka.magicaland.client.gui.widget.CustomButton;
 import top.csituka.magicaland.client.network.MglSkinClient;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class MglSkinScreen extends Screen {
     private final Screen parent;
     private List<MglSkinClient.RemoteSkin> skins = List.of();
+    private Map<String, MglSkinClient.RemoteSkin> skinByKey = Map.of();
+    private ModelGridWidget modelGrid;
+    private String selectedKey = "";
     private String status = "";
     private boolean loading;
+    private double listScroll;
 
     public MglSkinScreen(Screen parent) {
         super(text("title"));
@@ -24,29 +32,51 @@ public final class MglSkinScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        int width = Math.min(360, this.width - 32);
-        int left = (this.width - width) / 2;
+        if (modelGrid != null) listScroll = modelGrid.getScrollAmount();
+        int contentWidth = Math.min(460, width - 24);
+        int left = (width - contentWidth) / 2;
         addDrawableChild(new CustomButton(left, 10, 84, 20,
                 text("refresh"), false, button -> refresh()));
-        addDrawableChild(new CustomButton(left + width - 84, 10, 84, 20,
+        addDrawableChild(new CustomButton(left + contentWidth - 84, 10, 84, 20,
                 text("back"), false, button -> close()));
+
+        List<ModelGridWidget.ModelEntry> entries = new ArrayList<>();
+        Map<String, MglSkinClient.RemoteSkin> byKey = new LinkedHashMap<>();
+        for (MglSkinClient.RemoteSkin skin : skins) {
+            String key = displayKey(skin, byKey);
+            byKey.put(key, skin);
+            entries.add(new ModelGridWidget.ModelEntry(key, MglSkinClient.parseModel(skin)));
+        }
+        skinByKey = Map.copyOf(byKey);
+        if (!entries.isEmpty()) {
+            Rect bounds = new Rect(left, 70, contentWidth, Math.max(20, height - 112));
+            modelGrid = addDrawableChild(new ModelGridWidget(bounds, entries,
+                    () -> selectedKey, this::selectSkin));
+            modelGrid.restoreScrollAmount(listScroll);
+        } else {
+            modelGrid = null;
+        }
+
         int actionY = height - 34;
         addDrawableChild(new CustomButton(left, actionY, 112, 20,
                 MglSkinClient.isLoggedIn() ? text("logout") : text("login"), false,
                 button -> { if (MglSkinClient.isLoggedIn()) logout(); else login(); }));
-        CustomButton upload = new CustomButton(left + width - 112, actionY, 112, 20,
-                text("upload"), false, button -> upload());
+        CustomButton upload = new CustomButton(left + contentWidth - 112, actionY, 112, 20,
+                text("upload"), false, button -> client.setScreen(new MglSkinUploadScreen(this)));
         upload.active = MglSkinClient.isLoggedIn() && ModelManager.getActiveModel() != null;
         addDrawableChild(upload);
-        int y = 70;
-        for (int i = 0; i < skins.size() && i < 10; i++) {
-            MglSkinClient.RemoteSkin skin = skins.get(i);
-            String label = skin.name() + (skin.username().isBlank() ? "" : " · " + skin.username());
-            addDrawableChild(new CustomButton(left, y, width, 20, Text.literal(label), false,
-                    button -> importSkin(skin)));
-            y += 23;
-        }
         if (skins.isEmpty() && !loading) refresh();
+    }
+
+    private String displayKey(MglSkinClient.RemoteSkin skin, Map<String, MglSkinClient.RemoteSkin> existing) {
+        String base = skin.name().isBlank() ? "preset-" + skin.id() : skin.name();
+        String key = base;
+        if (existing.containsKey(key)) {
+            String suffix = skin.username().isBlank() ? String.valueOf(skin.id()) : skin.username();
+            key = base + " · " + suffix;
+        }
+        while (existing.containsKey(key)) key = base + " #" + skin.id();
+        return key;
     }
 
     private void refresh() {
@@ -64,10 +94,16 @@ public final class MglSkinScreen extends Screen {
         });
     }
 
+    private void selectSkin(String key) {
+        selectedKey = key;
+        MglSkinClient.RemoteSkin skin = skinByKey.get(key);
+        if (skin != null) client.setScreen(new MglSkinDetailScreen(this, skin));
+    }
+
     private void login() {
-        status = "正在打开浏览器...";
+        status = text("opening_login").getString();
         MglSkinClient.beginLogin(username -> {
-            status = "已登录：" + username;
+            status = Text.translatable("text.magicaland.mglskin.logged_in", username).getString();
             clearChildren();
             init();
         }, error -> status = error);
@@ -82,43 +118,25 @@ public final class MglSkinScreen extends Screen {
         init();
     }
 
-    private void upload() {
-        ModelConfig model = ModelManager.getAppliedModel();
-        if (model == null) return;
-        status = "正在上传...";
-        MglSkinClient.upload(model, name -> status = "上传成功：" + name, error -> status = error);
+    void uploadComplete(String name) {
+        refresh();
+        status = Text.translatable("text.magicaland.mglskin.uploaded", name).getString();
     }
 
-    private void importSkin(MglSkinClient.RemoteSkin skin) {
-        String base = skin.name().isBlank() ? "mglskin-" + skin.id() : skin.name();
-        base = base.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
-        if (base.isBlank()) base = "mglskin-" + skin.id();
-        if (base.length() > 24) base = base.substring(0, 24).trim();
-        String name = base;
-        int suffix = 2;
-        while (isModelNameTaken(name))
-            name = base + " " + suffix++;
-        if (ModelManager.importModel(name, skin.data())) status = "已导入：" + name;
-        else status = "导入失败，请检查预设数据";
-    }
-
-    private static boolean isModelNameTaken(String name) {
-        for (String existing : ModelManager.getAvailableModels())
-            if (existing.equalsIgnoreCase(name)) return true;
-        return false;
+    void uploadFailed(String error) {
+        status = error;
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         renderBackground(context);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 42, 0xFFFFFFFF);
         if (loading) {
-            context.drawCenteredTextWithShadow(textRenderer, text("loading"), width / 2, 64, 0xFFAAAAAA);
+            context.drawCenteredTextWithShadow(textRenderer, text("loading"), width / 2, 42, 0xFFAAAAAA);
         } else if (skins.isEmpty()) {
-            context.drawCenteredTextWithShadow(textRenderer, text("empty"), width / 2, 64, 0xFFAAAAAA);
+            context.drawCenteredTextWithShadow(textRenderer, text("empty"), width / 2, 42, 0xFFAAAAAA);
         }
-        int contentWidth = Math.min(360, width - 32);
         if (!status.isBlank()) {
+            int contentWidth = Math.min(460, width - 24);
             var lines = textRenderer.wrapLines(Text.literal(status), contentWidth);
             int statusY = height - 58 - lines.size() * textRenderer.fontHeight;
             for (int i = 0; i < lines.size(); i++)
@@ -128,8 +146,6 @@ public final class MglSkinScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
     }
 
-    @Override public void close() {
-        client.setScreen(parent);
-    }
+    @Override public void close() { client.setScreen(parent); }
     private static Text text(String key) { return Text.translatable("text.magicaland.mglskin." + key); }
 }
