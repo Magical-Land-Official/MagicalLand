@@ -192,7 +192,7 @@ public final class MglSkinClient {
     private static String baseUrl() {
         String configured = Config.getInstance().mglSkinUrl;
         String value = configured == null || configured.isBlank()
-                ? "http://127.0.0.1:4300" : configured.trim();
+                ? Config.DEFAULT_MGL_SKIN_URL : configured.trim();
         if (value.startsWith("http://localhost")) value = "http://127.0.0.1" + value.substring("http://localhost".length());
         if (value.startsWith("https://localhost")) value = "https://127.0.0.1" + value.substring("https://localhost".length());
         while (value.endsWith("/")) value = value.substring(0, value.length() - 1);

@@ -14,7 +14,7 @@ public class NetworkPage implements SettingsPage {
         SettingsTextField serviceUrl = new SettingsTextField(buttonX, 0, buttonWidth, 20,
                 Text.translatable("text.magicaland.config.mglskin_url.name"));
         String configuredUrl = config.mglSkinUrl;
-        if (configuredUrl == null || configuredUrl.isBlank()) configuredUrl = "http://127.0.0.1:4300";
+        if (configuredUrl == null || configuredUrl.isBlank()) configuredUrl = Config.DEFAULT_MGL_SKIN_URL;
         serviceUrl.setText(configuredUrl);
         serviceUrl.setMaxLength(200);
         serviceUrl.setChangedListener(value -> {
