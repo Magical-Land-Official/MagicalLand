@@ -28,8 +28,12 @@ final class PonyWingFlightPose implements AutoCloseable {
         var saved = new PonyWingFlightPose(bone);
         if (root) { bone.updateRotation(0, 0, 0); bone.updateScale(1, 1, 1); }
         if (body) {
-            bone.updateScale(1, 1, 1);
-            bone.updatePosition(bone.getPosX(), 0, bone.getPosZ());
+            var hover = switch (pose.mode()) {
+                case NORMAL, BRAKE, LANDING -> PonyWingFlightAnimations.hoveringBody(ticks);
+                default -> null;
+            };
+            bone.updateScale(hover == null ? 1 : hover.sx(), hover == null ? 1 : hover.sy(), hover == null ? 1 : hover.sz());
+            bone.updatePosition(bone.getPosX(), hover == null ? 0 : hover.y(), bone.getPosZ());
             if (pose.mode() == FlightPose.Mode.GLIDE || pose.mode() == FlightPose.Mode.BOOST) {
                 bone.updateRotation(0, 0, 0);
             }

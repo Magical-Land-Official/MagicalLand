@@ -28,6 +28,8 @@ public final class PonyWingFlightAnimations {
         return sample(flying.get(name), fly == null ? 0 : ticks % Math.max(1, fly.length()));
     }
 
+    public static Pose hoveringBody(double ticks) { return wing("Body", ticks); }
+
     public static Pose curled(String name, float progress) {
         if (progress < .12f && transfer != null) {
             var value = sample(curling.get(name), Math.max(0, progress / .12) * transfer.length());
