@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "magicaland",
   "version": "${version}",
-  "name": "Magical Land: Appearance",
+  "name": "Magical Land",
   "description": "Pony appearance, customization and animation. Independent of the gameplay module.",
   "authors": [
     "JessDaodao",

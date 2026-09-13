@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 public class Config {
+    public static final String DEFAULT_MGL_SKIN_URL = "https://skin.mgland.top/";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File BASE_DIR = new File(FabricLoader.getInstance().getConfigDir().toFile(), "magicaland");
     private static final File CONFIG_FILE = new File(BASE_DIR, "config.json");
@@ -29,6 +30,9 @@ public class Config {
     public String previewLighting = "balanced";
     
     public String activeModelName = "";
+    public String mglSkinUrl = DEFAULT_MGL_SKIN_URL;
+    public String mglSkinToken = "";
+    public String mglSkinUsername = "";
 
     private static Config instance;
 

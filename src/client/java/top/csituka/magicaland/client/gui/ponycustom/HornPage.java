@@ -3,7 +3,6 @@ package top.csituka.magicaland.client.gui.ponycustom;
 import net.minecraft.text.Text;
 import top.csituka.magicaland.client.config.ModelConfig;
 import top.csituka.magicaland.client.config.ModelManager;
-import top.csituka.magicaland.client.gui.widget.CustomButton;
 import top.csituka.magicaland.client.gui.widget.SectionLabel;
 import top.csituka.magicaland.client.gui.widget.SettingsList;
 import top.csituka.magicaland.client.gui.widget.Toggle;
@@ -21,30 +20,19 @@ public class HornPage implements PonyCustomPage {
         list.addWidget(new SectionLabel(buttonX, 0, buttonWidth, buttonHeight,
                 Text.translatable("text.magicaland.config.section.mane_styles.name")), SettingsList.Alignment.RIGHT);
 
-        final Toggle[] hornToggle = new Toggle[1];
-        Toggle wingToggle = new Toggle(buttonX, 0, buttonWidth, buttonHeight,
+        list.addWidget(new Toggle(buttonX, 0, buttonWidth, buttonHeight,
                 Text.translatable("text.magicaland.config.show_wings.name"), config.showWings,
                 toggle -> {
                     config.showWings = toggle.getState();
-                    if (config.showWings) {
-                        config.showHorn = false;
-                        hornToggle[0].setState(false);
-                    }
                     ModelManager.saveActiveModel();
-                });
-        list.addWidget(wingToggle, SettingsList.Alignment.RIGHT);
+                }), SettingsList.Alignment.RIGHT);
 
-        hornToggle[0] = new Toggle(buttonX, 0, buttonWidth, buttonHeight,
+        list.addWidget(new Toggle(buttonX, 0, buttonWidth, buttonHeight,
                 Text.translatable("text.magicaland.config.show_horn.name"), config.showHorn,
                 toggle -> {
                     config.showHorn = toggle.getState();
-                    if (config.showHorn) {
-                        config.showWings = false;
-                        wingToggle.setState(false);
-                    }
                     ModelManager.saveActiveModel();
-                });
-        list.addWidget(hornToggle[0], SettingsList.Alignment.RIGHT);
+                }), SettingsList.Alignment.RIGHT);
 
         list.addWidget(new SectionLabel(buttonX, 0, buttonWidth, buttonHeight,
                 Text.translatable("text.magicaland.config.section.mane_colors.name")), SettingsList.Alignment.RIGHT);
