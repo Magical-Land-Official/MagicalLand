@@ -6,8 +6,6 @@
 
 把自己的小马带进《我的世界》。
 
-Minecraft Java 1.20.1 · Fabric · 开发中
-
 [English](README.md) | 简体中文
 
 </div>

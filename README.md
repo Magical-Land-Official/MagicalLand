@@ -6,8 +6,6 @@
 
 Bring your own pony into Minecraft.
 
-Minecraft Java 1.20.1 · Fabric · In development
-
 English | [简体中文](README_ZH.md)
 
 </div>
