@@ -3,7 +3,7 @@
   "id": "magicaland",
   "version": "${version}",
   "name": "Magical Land",
-  "description": "Pony appearance, customization and animation. Independent of the gameplay module.",
+  "description": "Create your own pony in Minecraft with custom colors, cutie marks and animations.",
   "authors": [
     "JessDaodao",
     "MayHooves"

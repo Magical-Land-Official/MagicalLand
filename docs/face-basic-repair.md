@@ -1,6 +1,6 @@
 # 表情基础维修与解耦（2026-09-08）
 
-动作与表情的搭配仍由作者决定。本次不新增自动情绪、玩家表情菜单、手动覆盖优先级或网络协议。
+记录 2026-09-08 的表情轨道拆分与基础维修。动作与表情的搭配由资源配置决定。
 
 ## 资源分工
 
@@ -21,11 +21,11 @@
 
 ID 不依赖列表顺序，中文名称可以修改。`happy` 当前只代表已有笑眼，不会自动创建新的嘴部动作。已有模型中的 `Smeile` 拼写保留，避免改骨骼名波及其他资源。
 
-例如想让跳跃用笑眼，只需将 `actions` 中的 `"jump1": "neutral"` 改为 `"jump1": "happy"`。本次没有替作者更换跳跃表情：当前实际资源的 `jump1` 与 `run` 使用普通眼。睡眠和潜行在旧渲染器中的闭眼规则转移至配置；旧 `sneak` 内的向下看轨道另存为 `look_down`，供作者选择。
+例如让跳跃使用笑眼，可将 `actions` 中的 `"jump1": "neutral"` 改为 `"jump1": "happy"`。资源中的 `jump1` 与 `run` 默认使用普通眼。睡眠和潜行的闭眼规则移至配置；旧 `sneak` 的向下看轨道另存为 `look_down`。
 
 下落的组合动作使用 `{"expression": "fall_transition", "then_loop": "neutral"}`，先播放过渡表情，再循环普通表情。原下落过渡缺少普通眼与闭眼显隐值，本次保留原有轨道，并补齐 `CommonFace=1`、`close=0`，避免依赖上一动作或回到模型默认值后叠眼。挥手和芭蕾保留作者制作的动态表情及原有变化节奏。
 
-Java 可通过 `PonyExpressions.forExpression("happy")` 取得可复用的 `RawAnimation`；`forAction` 查询动作搭配，`expressions()` 提供 ID 与中文名称。未知 ID 回退普通表情。将来的玩家表情系统可复用这些入口，但仍需另行实现手动表情与动作表情的优先级、持续时间及必要的多人同步；本次没有开放这些玩法。
+Java 可通过 `PonyExpressions.forExpression("happy")` 取得 `RawAnimation`；`forAction` 查询动作搭配，`expressions()` 提供 ID 与中文名称。未知 ID 回退普通表情。玩家表情系统可复用这些入口，手动覆盖的优先级、持续时间与多人同步仍需另行实现。
 
 ## 新增眼型
 
@@ -50,7 +50,7 @@ Java 可通过 `PonyExpressions.forExpression("happy")` 取得可复用的 `RawA
 - 动作已指定笑眼、持续闭眼或挤眼时，普通眨眼不替换其眼型。作者的眼神位移优先于普通眨眼的小幅位移，眼仁缩放仍由眨眼控制。
 - 临时骨骼修改在 `Emotions` 子树渲染结束后恢复，包括姿态、pivot 和变更标记，避免跨帧或跨玩家残留。
 
-原眨眼约 3 秒循环、眼仁 `0.90 → 1.07 → 1.00` 的关键帧完全保留。以后可尝试更轻的 `0.95 → 1.03 → 1.00`，但本次未改美术幅度。
+眨眼沿用约 3 秒的循环，眼仁缩放为 `0.90 → 1.07 → 1.00`。
 
 本地与远端玩家从现有主动作推导对应表情，不新增表情数据包；捏脸和标题界面的预览也注册了表情控制器。控制器顺序为身体、眨眼、表情、耳朵、尾巴。
 
@@ -58,16 +58,16 @@ Java 可通过 `PonyExpressions.forExpression("happy")` 取得可复用的 `RawA
 
 运行时 mare 动画、`Resources/Animations` 下的 mare／changeling 动画，以及 `Mare.bbmodel`／`Changeling.bbmodel` 均拆出同名表情片段。身体关键帧、模型 geometry、UV、贴图与骨骼层级未变；两种模型各自原有的身体动画差异保留。
 
-Blockbench 内单独播放身体动作将不再自带表情，需要同时预览对应 `face.*` 与眨眼片段，或到游戏中验证组合效果。不要将表情关键帧重新合入身体动作后覆盖正式资源，否则会恢复两个控制器争用眼睛的问题。原项目快照保存在此次工作区的 `work/face-basic-repair-20260908/original` 中。
+Blockbench 中需要组合预览身体动作、对应 `face.*` 与眨眼片段。保持表情轨道独立，避免身体与表情控制器同时修改眼睛。原项目快照保存在本地维护资料的 `work/face-basic-repair-20260908/original` 中。
 
 ## 验证与限制
 
-`tests/face/PonyFacePoseTest.java` 是独立 main 回归测试，使用真实 `mare_geo.json` 和 GeckoLib 4.8.3 的 `GeoBone` 检查三种眼型、闭眼父子关系、眼仁映射、pivot、重复切换和异常恢复。还检查配置改绑动作、新增模拟 04 眼型和错误配置回退。
+当时的独立 main 回归测试为 `tests/face/PonyFacePoseTest.java`，使用真实 `mare_geo.json` 和 GeckoLib 4.8.3 的 `GeoBone` 检查三种眼型、闭眼父子关系、眼仁映射、pivot、重复切换和异常恢复。还检查配置改绑动作、新增模拟 04 眼型和错误配置回退。此路径记录当时布局，测试源码现存于本地维护资料。
 
-测试需要 Java 17+、项目使用的 GeckoLib 4.8.3、fastutil、JOML、Gson JAR。单独编译 `PonyExpressions.java`、`PonyFacePose.java`、`PonyGazeMath.java` 和测试类，将 `src/main/resources` 加入运行 classpath，以 `top.csituka.magicaland.client.render.PonyFacePoseTest <mare_geo.json 路径> <expressions.json 路径>` 运行。这不是完整模组编译或 Minecraft 渲染测试。
+当时使用 Java 17+、GeckoLib 4.8.3、fastutil、JOML、Gson JAR，单独编译 `PonyExpressions.java`、`PonyFacePose.java`、`PonyGazeMath.java` 和测试类，将 `src/main/resources` 加入运行 classpath，以 `top.csituka.magicaland.client.render.PonyFacePoseTest <mare_geo.json 路径> <expressions.json 路径>` 运行。检查范围为独立类与资源，不包含完整模组编译或 Minecraft 渲染。
 
 结构核对覆盖三个动画 JSON、两个 Blockbench 项目的身体轨道、原始眨眼、演出时长及非动画数据，通过 379 项检查；独立回归测试通过 5029 项断言。
 
-随后经用户授权，在隔离开发环境完成游戏编译、启动及本轮限定范围的表情验收，运行时验证通过 905 项断言。详见[游戏验收记录](face-runtime-check.md)。尚未覆盖双客户端同步，以及挥手／芭蕾完整身体与表情同步；本次没有重新打包发布 JAR。
+随后在隔离开发环境完成编译、启动和表情验收，运行时通过 905 项断言，详见[游戏验收记录](face-runtime-check.md)。未覆盖双客户端同步、挥手／芭蕾的完整动作组合，也未打包发布 JAR。
 
-后续加入的[自动眼仁注视](automatic-gaze.md)有独立的离线检查与待验收清单；上面的游戏验收发生在注视功能加入前，不能视为新功能已经通过游戏验收。
+后续加入的[自动眼仁注视](automatic-gaze.md)有独立检查记录；上述游戏结果早于注视功能加入。

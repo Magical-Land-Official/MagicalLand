@@ -14,22 +14,19 @@ English | [简体中文](README_ZH.md)
 
 **Magical Land** is a fan mod inspired by *My Little Pony: Friendship Is Magic*. Mix pony styles, choose colors, draw cutie marks, and save your own character presets.
 
-Appearance provides models, customization, animations, and appearance synchronization, and can be used on its own. Tribe abilities, achievements, and other gameplay features are being developed in the separate [Gameplay Addon](https://github.com/Elysian-Herd-Studio/Magical-Land-Gameplay).
-
 [Downloads](https://github.com/Elysian-Herd-Studio/Magical-Land/releases) · [User and developer documentation (Chinese)](docs/README.md) · [Report an issue](https://github.com/Elysian-Herd-Studio/Magical-Land/issues)
 
 ## Character customization
 
 - **Styles**: Choose the front mane, back mane, tail, and eye shape separately. Each mane section and the tail can be mirrored independently.
-- **Body and mane colors**: Choose a base color to automatically get matching highlight and shadow colors, or unlock those colors to adjust them yourself. Front mane, back mane, and tail colors can be linked or set separately.
-- **Six-region dyeing**: The front mane, back mane, and tail each have six regions you can color independently. Create two-tone or multicolor streaks while keeping the original texture and shading.
-- **Eye colors**: Adjust the two iris colors independently while keeping the original gradient. Expand the advanced options to also change the colors of the eye whites, pupils, and eyelashes.
-- **Custom cutie marks**: Draw on a 12×12 pixel canvas with a brush, eraser, eyedropper, undo, and redo. Share one design between both sides or draw each side separately.
-- **Character presets**: Switch, create, duplicate, rename, and delete presets to try new looks based on an existing character.
+- **Colors**: Customize the body, mane, and eyes. Body and mane highlights and shadows can be matched automatically or set by hand.
+- **Six-region dyeing**: Color six regions of each front mane, back mane, and tail separately.
+- **Custom cutie marks**: Draw on a 12×12 pixel canvas. Share a design between both sides or create one for each side.
+- **Character presets**: Save your favorite looks or duplicate a preset to try something new.
 
-Ponies blink, occasionally twitch their ears, and look at nearby entities. Some actions also have matching expressions. Soft, flowing magical glows surround unicorn horns and levitating items, accompanied by a few star sparkles and gentle magic sounds. Levitating items lag and sway with your movements, leaving magical trails as you move.
+Ponies blink, twitch their ears, and look at nearby creatures, with expressions for some actions. Items held by unicorns sway with their movements, accompanied by magical glows, sparkles, and sounds.
 
-During flight, winged characters flap their wings while wingless characters hover upright. Wingless unicorns are also surrounded by a magical glow. The ability to fly comes from vanilla Minecraft or a gameplay mod; see the [flight visuals guide (Chinese)](docs/flight-visuals.md).
+During flight, winged characters flap their wings while wingless characters hover. The optional [Magical Land Gameplay](https://github.com/Elysian-Herd-Studio/Magical-Land-Gameplay) addon adds survival flight and other tribe abilities, along with an achievement system.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/9d5d3c8d-fb6e-4066-bb05-3bfdbf14ad2d" alt="Twilight Sparkle pony model showcase" width="45%">
@@ -40,37 +37,25 @@ During flight, winged characters flap their wings while wingless characters hove
 
 ## Installation and use
 
-The current platform is **Minecraft Java 1.20.1 / Fabric**. Forge / NeoForge support may be considered later.
-
-Current development versions: Appearance **0.3.6** (API **1.6**), paired with Gameplay **0.3.4** when using the addon. Addons can use the existing flight visuals and provide full flight orientation without changing vanilla flight permissions.
-
-Appearance requires:
+The current development version is **0.3.6**, for **Minecraft Java 1.20.1 / Fabric**. It requires:
 
 - Fabric Loader **0.19.1 or later**;
 - **Fabric API** for Minecraft 1.20.1;
-- **GeckoLib 4.7 or later** for Minecraft 1.20.1; development currently uses 4.8.3.
+- **GeckoLib 4.7 or later** for Minecraft 1.20.1.
 
-See [Releases](https://github.com/Elysian-Herd-Studio/Magical-Land/releases) for version files and installation notes. Place the Appearance JAR and its dependencies in your game's `mods` folder. When upgrading from the old all-in-one mod, replace it with the new Appearance mod.
+Get the installation files from [Releases](https://github.com/Elysian-Herd-Studio/Magical-Land/releases) and place the mod and its dependencies in your game's `mods` folder. When upgrading from the old all-in-one mod, remove it before installing the new version.
 
-Click **“Pony Custom”** at the bottom right of the game's main menu to open the standalone character editor. **F9** opens mod settings by default; the optional Mod Menu also provides an entry to Appearance's settings.
-
-If you have hidden the main-menu button, change its visibility under **Settings → General** in Appearance's settings.
-
-The preview on the left updates as you edit. Drag to rotate it; selecting a part automatically focuses the camera on it, and you can turn automatic focus off. The preview uses fixed lighting, and style thumbnails use fixed reference colors. See the [customization guide (Chinese)](docs/customization-ui.md) for details.
-
-Edits stay in a draft. Select **“Save & apply”** to update your character and presets. Choosing to discard changes when leaving restores the previously saved state.
+Click **“Pony Custom”** at the bottom right of the main menu to edit your character, then **“Save & apply”** to keep your changes. **F9** opens settings by default; Mod Menu also provides an entry. See the [customization guide (Chinese)](docs/customization-ui.md) for more details.
 
 ## Multiplayer and Gameplay
 
 | Installation | Features |
 | --- | --- |
-| Appearance and its dependencies on the client | Local pony appearance and customization. |
-| Appearance and its dependencies on both client and server | Multiplayer appearance, animation, and gaze synchronization. The server uses the same Appearance JAR. |
-| A compatible Gameplay Addon also installed on both sides | Separate gameplay features; see the Gameplay repository. |
+| This mod and its dependencies on the client | Local pony appearance and customization. |
+| This mod and its dependencies on both client and server | Synchronized pony appearances, animations, and gaze. |
+| A compatible Gameplay addon also installed on both sides | Tribe abilities, achievements, and other gameplay features. |
 
-Seeing each other's custom appearances in multiplayer requires compatible appearance synchronization on the server. Gameplay uses Appearance's public API. The mods have independent versions; check their release notes for compatible combinations.
-
-Gameplay's server rules can determine whether a pony displays a horn or wings, without changing saved appearance presets. Tribe selection and the option to allow cosmetic combinations are managed by Gameplay; Appearance alone keeps the player's original choices.
+Multiplayer appearance synchronization requires server support. Servers use the same Magical Land JAR. See the Gameplay repository for its compatible versions and race rules.
 
 ## Development and feedback
 

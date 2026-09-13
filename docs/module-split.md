@@ -1,41 +1,41 @@
-# 外观主模组与独立 Gameplay Addon
+# 双仓开发
 
 ## 职责与安装
 
-两个 Git 仓库、两个 Mod 安装包。外观 JAR 同时提供客户端显示与服务端同步；Gameplay 负责三族能力、成就系统等玩法。
+Magical Land 提供小马模型、自定义、动画和外观同步；Gameplay 扩展三族能力与成就系统。两者分别维护仓库和版本。
 
 | 仓库 | 模组 ID | 内容 |
 | --- | --- | --- |
 | [Magical-Land](https://github.com/Elysian-Herd-Studio/Magical-Land) | `magicaland` | 模型、捏脸、动画、预设、挑染、可爱标志、眼神、耳动、手持物视觉、光效音效、外观同步、公共 API |
 | [Magical-Land-Gameplay](https://github.com/Elysian-Herd-Studio/Magical-Land-Gameplay) | `magicaland_gameplay` | 三族能力、能力轮盘、成就系统及后续玩法 |
 
-外观不依赖 Gameplay。玩法只通过[公共 API](appearance-api.md)使用外观表现，不读配置管理器、网络缓存或渲染内部实现。权限、库存、伤害和交互仍由 Gameplay 服务端判断，捏脸显示角翼不是授权依据。
+Gameplay 通过[公共 API](appearance-api.md)调用主模组的显示功能。配置、网络缓存和渲染内部实现由主模组管理；能力权限、库存、伤害和交互由 Gameplay 服务端判定。角和翅膀的显示状态不代表能力权限。
 
-- 客户端装外观及 Fabric API、GeckoLib：使用本地外观与编辑器；没有服务端同步支持时不保证互见自定义外观。
-- 客户端和服务器都装外观及依赖：保留多人外观、动画和辅助注视同步，不需要 Gameplay。
-- 使用玩法：客户端和服务器都安装兼容的外观、Gameplay 及依赖。
-- 玩家只安装普通 JAR，不安装 API 编译产物，也不把旧一体包与新外观包并装。
+- 客户端安装 Magical Land 及依赖：使用本地造型与编辑器。
+- 客户端和服务器都安装 Magical Land 及依赖：同步玩家造型、动画与注视。
+- 使用 Gameplay：客户端和服务器都安装兼容的主模组、Gameplay 及依赖。
+- 玩家安装普通 JAR；`api` 产物仅供开发编译。由旧一体包升级时先移除旧包。
 
 ## 版本与源码
 
-两个仓库各自使用根 `src/main`、`src/client`、`tests` 和 Gradle 配置。美术与 Blockbench 源文件只保留在外观仓库 `Resources/`。
+两个仓库各自维护 `src/main`、`src/client` 和 Gradle 配置。美术与 Blockbench 源文件位于主仓库 `Resources/`。
 
-新架构从外观 `0.3.0`、Gameplay `0.1.0` 开始，公共 API 主版本为 1；不再要求两包版本号相同。Addon 记录准确开发依赖版本，运行时声明兼容范围，API 破坏性变更必须同步调整范围与测试。
+Gameplay 的 `appearance_version` 指定编译和开发运行所需的主模组版本，`appearance_compatibility` 指定安装兼容范围。API 破坏性变更需同步调整依赖与测试，具体接口版本见 [API 文档](appearance-api.md#依赖与兼容性)。
 
-外观预设与可爱标志沿用已有格式。玩法的协议和存档兼容规则由[玩法仓库](https://github.com/Elysian-Herd-Studio/Magical-Land-Gameplay/blob/1.20.1-Fabric/docs/repository-boundary.md)记录。
+角色预设与可爱标志沿用已有格式。Gameplay 的协议和存档兼容规则见[开发说明](https://github.com/Elysian-Herd-Studio/Magical-Land-Gameplay/blob/1.20.1-Fabric/docs/repository-boundary.md)。
 
 ## 独立构建与联合开发
 
 两仓使用 Gradle 9.4.1 wrapper、Loom 1.16.3，Java 输出仍为 17。请使用能运行这些开发工具的现代 JDK。以下是两个仓库的构建与联合调试步骤。
 
-外观仓库：
+Magical Land 仓库：
 
 ```powershell
 .\gradlew.bat build
 .\gradlew.bat publishMavenJavaPublicationToLocalDevelopmentRepository
 ```
 
-默认发布到 `build/repo`，当前开发坐标为 `top.csituka:magicaland-appearance:0.3.4`，同时提供普通安装 JAR、`api`、`sources`、`api-sources` 产物。API 运行实现只在主 Mod 中打包一次。
+默认发布到 `build/repo`，坐标为 `top.csituka:magicaland:<mod_version>`。其中 `mod_version` 取自主仓库 `gradle.properties`。同时提供普通安装 JAR、`api`、`sources` 和 `api-sources` 产物；运行时使用完整主模组。
 
 Gameplay 仓库：
 
@@ -44,18 +44,14 @@ Gameplay 仓库：
 .\gradlew.bat runClient -PappearanceMavenRepo=C:/absolute/path/to/appearance/build/repo
 ```
 
-首次构建 Gameplay 前，需要先取得其声明版本的外观模组和 API 文件。可按上面的步骤将外观包发布到本地开发仓库，也可使用 Maven Local：先在外观仓库执行 `publishToMavenLocal`。
+首次构建 Gameplay 前，先发布其 `appearance_version` 指定的主模组及 API。也可在主仓库执行 `publishToMavenLocal`，通过 Maven Local 提供依赖。
 
-两个仓库可分开或在同一个编辑器工作区打开。各自 `runClient`/`runServer` 使用独立 `run/client`/`run/server`；Gameplay 通过发布物加载外观，外观运行配置不加载 Gameplay。不要恢复跨仓 `sourceSets`、复制美术或共享正在使用的存档。
+两个仓库可分开或在同一个编辑器工作区打开。各自 `runClient`/`runServer` 使用独立 `run/client`/`run/server`；Gameplay 通过发布物加载主模组，主仓库的运行配置单独启动 Magical Land。避免跨仓共享 `sourceSets`、复制美术资源或共用正在运行的存档。
 
 ## 验证与后续
 
-架构、API、资源与玩法回归由维护者通过本地工具运行；个人测试源码和入口不随仓库发布。需要复跑时先向维护者取得对应版本的测试。
+独立 Java 回归测试需单独执行，Gradle 构建成功不代表它们已通过。协作测试与个人维护工具的存放规则见[文档维护](development/documentation.md)。
 
-外观仓库保留其他开发者参与维护的协作测试及必要替身。这些独立 Java 测试需要单独运行，Gradle 构建成功不代表它们已通过。
+历史过程见[迁移记录](repository-migration.md)与[双仓构建记录](reports/2026-09-10-split-build.md)。
 
-发布前检查仅外观客户端／同步服务器、两包联合客户端／服务器，以及预设、草稿保存、显示恢复和多人同步。三族能力与成就系统的功能用例按[玩法文档](https://github.com/Elysian-Herd-Studio/Magical-Land-Gameplay/blob/1.20.1-Fabric/docs/README.md)分别执行。
-
-遵循 `AGENTS.md`，未经用户要求不自行构建或启动游戏。[迁移记录](repository-migration.md)区分已执行检查与待实机验收项。
-
-[独立同步服务](appearance-sync-future.md)作为备选方案保留。外观包沿用现有握手、通道与同步方式；首次外观同步与自身广播开关的处理，以及重复发送完整配置的问题，另见[项目待办](../TODO.md)。
+[独立同步服务](appearance-sync-future.md)仍是备选方案。现有同步问题与后续工作见[项目待办](../TODO.md)。

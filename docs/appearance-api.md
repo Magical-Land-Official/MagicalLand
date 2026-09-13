@@ -1,23 +1,23 @@
-# 外观 API v1.6
+# Magical Land API v1.6
 
-Magicaland 0.3.6 通过 `top.csituka.magicaland.api` 和 `top.csituka.magicaland.api.client` 提供公共接口，当前配套 Gameplay 0.3.4。Gameplay 及其他扩展（Addon）依赖这些包；配置、渲染实现、动画状态和同步缓存均属于外观模组内部实现。
+Magical Land 0.3.6 通过 `top.csituka.magicaland.api` 和 `top.csituka.magicaland.api.client` 提供公共接口，当前配套 Gameplay 0.3.4。扩展通过这些接口对接主模组；配置、渲染、动画状态和同步缓存属于内部实现。
 
 `ApiVersion` 位于主源码集，只依赖 Java 标准库，可在独立服务端安全查询。`.api.client` 下的接口仅供客户端使用：查询、注册和 `playTransformation` 必须在客户端线程执行，绘制接口必须在渲染线程执行。本 API 不授予玩法能力，也不提供可作为服务端判定依据的权威外观数据。
 
 ## 依赖与兼容性
 
-API 版本与模组版本独立。`ApiVersion.requireCompatible(1, 0)` 要求已安装 API 的主版本为 1、次版本至少为 0，不满足时抛出明确异常；`isCompatible` 提供不抛异常的兼容性检查。API 次版本更新保持已有签名和语义，不兼容变更必须提升主版本。扩展的模组元数据也必须声明兼容的 Appearance 版本要求；运行时检查无法解决 API 本身未安装的问题。
+API 版本与模组版本独立。`ApiVersion.requireCompatible(1, 0)` 要求已安装 API 的主版本为 1、次版本至少为 0，不满足时抛出明确异常；`isCompatible` 提供不抛异常的兼容性检查。API 次版本更新保持已有签名和语义，不兼容变更必须提升主版本。扩展的模组元数据也必须声明兼容的 Magical Land 版本；运行时检查无法解决 API 本身未安装的问题。
 
 独立持物视觉上下文与第三人称悬浮入口需要 `ApiVersion.requireCompatible(1, 1)`；魔法活动注册需要 `ApiVersion.requireCompatible(1, 2)`；随实体运动的光焰入口需要 `ApiVersion.requireCompatible(1, 3)`；角翅覆盖与变身光尘需要 `ApiVersion.requireCompatible(1, 4)`；独立飞行表现需要 `ApiVersion.requireCompatible(1, 5)`；完整飞行姿态需要 `ApiVersion.requireCompatible(1, 6)`。已有方法签名继续兼容。
 
-发布坐标为 `top.csituka:magicaland-appearance:0.3.6`。编译时依赖带 `api` 分类标识（classifier）的产物，运行时依赖完整 Appearance 模组。扩展应与主模组使用相同的 Minecraft 1.20.1、Fabric 和映射版本。通过 Loom 引用重映射后的 API 产物，Loom 会将其中的 Minecraft 类型签名转换为扩展开发环境所用的命名空间。
+发布坐标为 `top.csituka:magicaland:0.3.6`。编译时依赖带 `api` 分类标识（classifier）的产物，运行时依赖完整主模组。扩展应与主模组使用相同的 Minecraft 1.20.1、Fabric 和映射版本。通过 Loom 引用重映射后的 API 产物，Loom 会将其中的 Minecraft 类型签名转换为扩展开发环境所用的命名空间。
 
 ```groovy
-modCompileOnly "top.csituka:magicaland-appearance:0.3.6:api"
-modRuntimeOnly "top.csituka:magicaland-appearance:0.3.6"
+modCompileOnly "top.csituka:magicaland:0.3.6:api"
+modRuntimeOnly "top.csituka:magicaland:0.3.6"
 ```
 
-`api` JAR 仅用于编译。不要将它放入 `mods` 文件夹、通过 `include` 嵌套打包、合并打包（shade），或把其中的类复制进扩展。运行时由完整 Appearance JAR 提供唯一一份公共 API 及其实现。Appearance 现有的服务端同步功能也保留在这同一个完整 JAR 中。
+`api` JAR 仅用于编译。不要将它放入 `mods` 文件夹、通过 `include` 嵌套打包、合并打包（shade），或把其中的类复制进扩展。运行时由完整 Magical Land JAR 提供公共 API、实现及服务端同步功能。
 
 API 产物包含 `top/csituka/magicaland/api/**` 下的全部类文件，包括嵌套枚举类。v1.6 具体包含 `ApiVersion`、`Registration`、`AppearanceSnapshot`、`Appearances`、`AppearanceOverrides`、`AppearanceOverrides$Visibility`、`AppearanceVisuals`、`ItemVisualContext`、`AnatomyOverride`、`FlightPose` 和 `FlightPose$Mode`。它不包含 `client/api` 内部桥接实现、`ModelConfig`、渲染内部类、网络类、Mixin 或资源。公共方法签名只使用 Java、Minecraft、游戏自带的 JOML 或 API 自身的类型。`api-sources` 分类产物包含相应的公共源码；完整源码产物供主模组开发使用。
 
@@ -76,7 +76,7 @@ Gameplay 在 JOIN 时注册远控实体注视与魔法活动两条回调，断�
 
 `new FlightPose(x, y, z, w, mode, flapStrength, reboundProgress)` 保存不可变的四元数分量，构造时归一化；非有限数、近零四元数或 null 模式会被拒绝。`rotation()` 返回新的 JOML `Quaternionf`，修改它不会改变原姿态。拍翼强度截取到 0–2，0 表示展开滑翔；回弹进度截取到 0–1。
 
-朝向将局部 **+Z 前方、+Y 上方** 转到 Minecraft 世界坐标。水平 yaw 0 对应单位四元数；原版角度换算为 `Ry(-yaw) * Rx(pitch)`，角度使用弧度，正 pitch 向下；局部横滚可再右乘 `Rz(roll)`。提供完整世界姿态，不要预乘模型自身的 180° 校准，也不要重复叠加 bodyYaw。外观包用此姿态转动视觉根节点，并把头部注视转回身体局部坐标。
+朝向将局部 **+Z 前方、+Y 上方** 转到 Minecraft 世界坐标。水平 yaw 0 对应单位四元数；原版角度换算为 `Ry(-yaw) * Rx(pitch)`，角度使用弧度，正 pitch 向下；局部横滚可再右乘 `Rz(roll)`。提供完整世界姿态，不要预乘模型自身的 180° 校准，也不要重复叠加 bodyYaw。主模组用此姿态转动视觉根节点，并把头部注视转回身体局部坐标。
 
 模式包括 `NORMAL` 普通拍翼、`GLIDE` 滑翔、`BOOST` 滑翔加力、`BRAKE` 制动、`LANDING` 落地缓冲、`REBOUND` 团身回弹。制动与落地会加强拍翼；滑翔加力仍可通过强度控制拍翼。回弹由进度驱动团身、视觉翻转三圈和最后展翼，传入的四元数只含基础朝向，不应再包含这三圈。
 
@@ -93,7 +93,7 @@ poses.clear();
 flight.close();
 ```
 
-完整根节点姿态与程序拍翼只叠加于世界中的有效有翼小马；背包、捏脸预览和缩略图不叠加这一层旋转。绘制后恢复骨骼及变更标记，不改模型、UV、原动画资源或保存的外观。此接口不控制第一人称相机；相机、输入、飞行物理和多人姿态同步由扩展负责。没有扩展注册时，外观包仍可独立运行并沿用原有飞行表现。
+完整根节点姿态与程序拍翼只叠加于世界中的有效有翼小马；背包、捏脸预览和缩略图不叠加这一层旋转。绘制后恢复骨骼及变更标记，不改模型、UV、原动画资源或保存的外观。此接口不控制第一人称相机；相机、输入、飞行物理和多人姿态同步由扩展负责。没有扩展注册时沿用主模组的原有飞行表现。
 
 ### 角与翅膀的临时显示覆盖
 
@@ -101,7 +101,7 @@ flight.close();
 
 覆盖作用于世界、背包和当前玩家的捏脸主预览，并用于飞行动画、角光、持物魔法及对应声音的显示判断。标题界面没有当前玩家时、款式示例缩略图及没有扩展注册时，仍沿用原显示规则。现有模型只有一套角和翅膀，直接复用其几何与配色；不改变发型、眼型或其他外观。
 
-外观模块只生成临时显示副本，原预设、编辑草稿、已应用配置和远端外观缓存均不改写。种族选择、允许外观混搭等设置由 Gameplay 管理；允许混搭时，Gameplay 的回调可返回 null。外观 API 不存储种族，不新增同步协议，也不改变飞行权限或服务端判定。回调应读取当前已同步状态，不要在回调中递归调用 `Appearances.find`。
+主模组只生成临时显示副本，原预设、编辑草稿、已应用配置和远端外观缓存均不改写。种族选择、允许外观混搭等设置由 Gameplay 管理；允许混搭时，Gameplay 的回调可返回 null。此接口不存储种族，不新增同步协议，也不改变飞行权限或服务端判定。回调应读取当前已同步状态，不要在回调中递归调用 `Appearances.find`。
 
 ## 视觉入口
 
@@ -155,7 +155,7 @@ AppearanceVisuals.renderFirstPerson(owner, visual, buffers, () -> renderVanillaH
 API 回归源码与入口由作者在本地维护，需要复跑时先取得对应版本的测试。环境需要可用的 Node 和 JDK 17 或更高版本。这是一组针对源码契约的独立测试，不会构建整个项目。测试使用轻量 Minecraft/Fabric 测试替身编译实际 API 与内部桥接源码，检查以下内容：
 
 - 外观快照：快照数据隔离、有效角翅覆盖、本地／远端与预览草稿互不改写。
-- 回调与注册：四类覆盖的同优先级顺序、逐级回退、owner 与句柄清理、断线会话、无效注视目标和回调异常。
+- 回调与注册：同优先级顺序、逐级回退、owner 与句柄清理、断线会话、无效注视目标和回调异常。
 - 视觉状态：刷新异常、新旧第一人称重载的嵌套调用保护与状态恢复、上下文物品复制，以及第三人称入口的参数约束和矩阵恢复。
 - API 打包边界：仅使用公共 API JAR 与 Minecraft 测试替身编译外部调用示例，并检查公共字节码签名是否泄漏内部类型。
 - 变身入口：当前世界玩家解析、已应用颜色，以及未知玩家、缺少外观、关闭替换与断线时不触发；实际粒子绘制沿用既有测试。
@@ -164,4 +164,4 @@ API 回归源码与入口由作者在本地维护，需要复跑时先取得对�
 
 API 测试还在轻量实体替身上执行实际 `MagicEquip` 与装备包络，覆盖空手远控点亮、回收淡出、正常持物保留、物品转入远控时持续发光、隐身和无角资格、断线清理。`tests/render/LevitationVisualIsolationTest.java` 使用真实 `ItemLevitation` 的两组缓存，验证本体与投影的独立状态、时钟、视角与清理。`LevitationMotionTest` 和 `MagicEquipMotionTest` 继续覆盖惯性与装备动画的纯计算规则。这些测试不提供游戏内画面验收。
 
-如果同级目录存在 Gameplay 仓库，测试还会扫描其 Java 源码，检查是否越过 API 边界引用 Appearance 内部实现。Gameplay 位于其他位置时，可将 `MAGICALAND_GAMEPLAY_REPO` 设置为该仓库路径以启用扫描。这些检查不能替代 Loom 构建、打包后 JAR 的启动检查或游戏内视觉验证。
+如果同级目录存在 Gameplay 仓库，测试还会扫描其 Java 源码，检查是否越过 API 边界引用主模组内部实现。Gameplay 位于其他位置时，可将 `MAGICALAND_GAMEPLAY_REPO` 设置为该仓库路径以启用扫描。这些检查不能替代 Loom 构建、打包后 JAR 的启动检查或游戏内视觉验证。
