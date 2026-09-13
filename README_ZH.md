@@ -2,7 +2,7 @@
 
 <img src="Resources/Icon/full-缩放.png" alt="Magical Land 标志" width="45%">
 
-# 魔法大陆 · 外观包
+# 魔法大陆
 
 把自己的小马带进《我的世界》。
 

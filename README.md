@@ -2,7 +2,7 @@
 
 <img src="Resources/Icon/full-缩放.png" alt="Magical Land logo" width="45%">
 
-# Magical Land · Appearance
+# Magical Land
 
 Bring your own pony into Minecraft.
 

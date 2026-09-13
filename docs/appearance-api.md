@@ -1,6 +1,6 @@
 # 外观 API v1.6
 
-Magicaland Appearance 0.3.6 通过 `top.csituka.magicaland.api` 和 `top.csituka.magicaland.api.client` 提供公共接口，当前配套 Gameplay 0.3.4。Gameplay 及其他扩展（Addon）依赖这些包；配置、渲染实现、动画状态和同步缓存均属于外观模组内部实现。
+Magicaland 0.3.6 通过 `top.csituka.magicaland.api` 和 `top.csituka.magicaland.api.client` 提供公共接口，当前配套 Gameplay 0.3.4。Gameplay 及其他扩展（Addon）依赖这些包；配置、渲染实现、动画状态和同步缓存均属于外观模组内部实现。
 
 `ApiVersion` 位于主源码集，只依赖 Java 标准库，可在独立服务端安全查询。`.api.client` 下的接口仅供客户端使用：查询、注册和 `playTransformation` 必须在客户端线程执行，绘制接口必须在渲染线程执行。本 API 不授予玩法能力，也不提供可作为服务端判定依据的权威外观数据。
 
