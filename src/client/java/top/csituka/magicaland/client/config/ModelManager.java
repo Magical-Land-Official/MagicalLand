@@ -104,6 +104,26 @@ public class ModelManager {
         }
     }
 
+    public static boolean importModel(String name, String json) {
+        if (editing != null || name == null || json == null || json.length() > 1_000_000) return false;
+        String safeName = name.trim();
+        if (!isValidModelName(safeName)) return false;
+        File file = resolveModelFile(safeName);
+        if (file == null || file.exists()) return false;
+        try {
+            ModelConfig imported = GSON.fromJson(json, ModelConfig.class);
+            if (imported == null) return false;
+            ModelConfig.sanitize(imported);
+            imported.name = safeName;
+            writeAtomically(file, writer -> GSON.toJson(imported, writer));
+            refreshModelList();
+            setActiveModel(imported);
+            return true;
+        } catch (IOException | RuntimeException ignored) {
+            return false;
+        }
+    }
+
     public static ModelConfig getAppliedModel() {
         return editing == null ? activeModel : editing.applied;
     }

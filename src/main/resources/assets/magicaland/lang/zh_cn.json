@@ -190,5 +190,15 @@
   "text.magicaland.customize.editor.discard": "放弃更改",
   "text.magicaland.customize.editor.continue": "继续编辑",
   "text.magicaland.customize.editor.begin_error": "无法安全读取预设，暂不能编辑。请关闭后重试。",
-  "text.magicaland.customize.editor.save_error": "保存失败，草稿仍保留。请检查预设文件或稍后重试。"
+  "text.magicaland.customize.editor.save_error": "保存失败，草稿仍保留。请检查预设文件或稍后重试。",
+  "text.magicaland.mglskin.title": "MGL Skin",
+  "text.magicaland.mglskin.refresh": "刷新",
+  "text.magicaland.mglskin.back": "返回",
+  "text.magicaland.mglskin.login": "登录",
+  "text.magicaland.mglskin.logout": "退出登录",
+  "text.magicaland.mglskin.upload": "上传模型",
+  "text.magicaland.mglskin.loading": "加载中...",
+  "text.magicaland.mglskin.empty": "暂无共享预设",
+  "text.magicaland.mglskin.url": "MGL Skin 地址",
+  "text.magicaland.config.mglskin_url.name": "MGL Skin 服务地址"
 }

@@ -190,5 +190,15 @@
   "text.magicaland.customize.editor.discard": "Discard changes",
   "text.magicaland.customize.editor.continue": "Keep editing",
   "text.magicaland.customize.editor.begin_error": "Could not safely read presets. Close and retry before editing.",
-  "text.magicaland.customize.editor.save_error": "Save failed; your draft is retained. Check preset files or retry."
+  "text.magicaland.customize.editor.save_error": "Save failed; your draft is retained. Check preset files or retry.",
+  "text.magicaland.mglskin.title": "MGL Skin",
+  "text.magicaland.mglskin.refresh": "Refresh",
+  "text.magicaland.mglskin.back": "Back",
+  "text.magicaland.mglskin.login": "Log in",
+  "text.magicaland.mglskin.logout": "Log out",
+  "text.magicaland.mglskin.upload": "Upload model",
+  "text.magicaland.mglskin.loading": "Loading...",
+  "text.magicaland.mglskin.empty": "No shared presets",
+  "text.magicaland.mglskin.url": "MGL Skin URL",
+  "text.magicaland.config.mglskin_url.name": "MGL Skin service URL"
 }

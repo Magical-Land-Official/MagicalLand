@@ -29,6 +29,9 @@ public class Config {
     public String previewLighting = "balanced";
     
     public String activeModelName = "";
+    public String mglSkinUrl = "http://127.0.0.1:4300";
+    public String mglSkinToken = "";
+    public String mglSkinUsername = "";
 
     private static Config instance;
 

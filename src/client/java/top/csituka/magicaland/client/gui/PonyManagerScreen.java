@@ -64,6 +64,9 @@ public final class PonyManagerScreen extends Screen implements ViewCube.Rotation
         revealSelection = false;
         addDrawableChild(new CustomButton(width - 70, 6, 62, 20,
                 Text.translatable("text.magicaland.config.button.back"), false, button -> close()));
+        addDrawableChild(new CustomButton(width - 154, 6, 78, 20,
+                Text.translatable("text.magicaland.mglskin.title"), false,
+                button -> client.setScreen(new MglSkinScreen(this))));
         CustomButton createButton = addButton(layout.create(), text("create"), button -> {
             if (!ModelManager.isEditing()) client.setScreen(new ModelNameScreen(this, true));
         });
